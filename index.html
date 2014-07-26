@@ -1,0 +1,38 @@
+<html>
+  <head>
+    <style type="text/css">
+      #debugCanvas{
+        /*position: absolute;*/
+        z-index: 2;
+      }
+      video{
+        display: none;
+        position: absolute;
+        -webkit-transform: translateX(480px);
+        -o-transform: translateX(480px);
+         transform: translateX(480px);
+        transform:  translateX(480px);
+        -webkit-transform: scaleX(-1);
+        -o-transform: scaleX(-1);
+         transform: scaleX(-1);
+        transform:  scaleX(-1);
+      }
+      #myCanvas{
+        /*position: absolute;*/
+      }
+    </style>
+  </head>
+  <body>
+    <div id='container'>
+      <canvas id="debugCanvas" width="80px" height="60px"></canvas>  <video muted autoplay width="640px" height="480px"></video>
+      <canvas id="myCanvas" width="640px" height="480px"></canvas>
+  </body>
+  <script type="text/javascript" src="camera.js"></script>
+  <script type="text/javascript" src="delaunay.js"></script>
+  <script type="text/javascript" src="jsfeat.min.js"></script>
+  <script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.5/dat.gui.min.js"></script>
+  <script type="text/javascript" src="change_detection.js"></script>
+  <script type="text/javascript" src="corner_detection.js"></script>
+  <script type="text/javascript" src="draw.js"></script>
+  <script type="text/javascript" src="main.js"></script>
+</html>
