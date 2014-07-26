@@ -41,7 +41,6 @@ var drums = [kick, snare, agogoHigh, agogoLow]
 function sStep() {
   for (var i = 0; i < drums.length; i++){
     if (drums[i].pattern[step] == 1){
-      console.log('bang!');
       drums[i].start();
     }
   }
@@ -145,3 +144,16 @@ synth = new Synth();
 midiToFreq = function(m) {
     return 440 * Math.pow(2, (m-69)/12.0);
 };
+
+FMSynth = function() {
+  this.signal = new Tone.Signal;
+  this.add1 = new Tone.Add
+  this.osc1 = new Tone.Oscillator(440, 'sine');
+
+  this.signal.connect(add1);
+  this.add1.connect(this.osc1.frequency);
+}
+
+FMSynth.prototype.setPitch = function(p) {
+  this.signal.exponentialRampToValueNow(freq, 0.1);
+}
