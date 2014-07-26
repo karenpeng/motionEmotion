@@ -17,7 +17,7 @@ Tone.Transport.setInterval(sStep, '16n');
 var step = 0;
 
 function onStep() {
-  if (typeof(detectPoints.points) !== 'undefined'){
+  if (typeof (detectPoints.points) !== 'undefined') {
     if (detectPoints.points.length > 5) {
       playLead(detectPoints.points);
     } else {
@@ -31,28 +31,27 @@ var snare = new Tone.Player('sounds/505/snare.mp3', playerLoaded);
 var agogoHigh = new Tone.Player('sounds/505/agogoHigh.mp3', playerLoaded);
 var agogoLow = new Tone.Player('sounds/505/agogoLow.mp3', playerLoaded);
 
-kick.pattern = [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0];
-snare.pattern = [0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,];
-agogoHigh.pattern = [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1];
-agogoLow.pattern = [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0];
+kick.pattern = [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0];
+snare.pattern = [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, ];
+agogoHigh.pattern = [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1];
+agogoLow.pattern = [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0];
 
 var drums = [kick, snare, agogoHigh, agogoLow]
 
 function sStep() {
-  for (var i = 0; i < drums.length; i++){
-    if (drums[i].pattern[step] == 1){
+  for (var i = 0; i < drums.length; i++) {
+    if (drums[i].pattern[step] == 1) {
       drums[i].start();
     }
   }
   step++;
-  if (step >= 16){
+  if (step >= 16) {
     step = 0;
   }
 }
 
-
 //player onload callback
-function playerLoaded(player){
+function playerLoaded(player) {
   //able to be retriggered before the file is done playing
   player.retrigger = true;
   player.toMaster();
@@ -66,7 +65,7 @@ function snareDrum() {
   snare.start();
 }
 
-function agogoHigh(){
+function agogoHigh() {
   agogoHigh.start();
 }
 
@@ -74,13 +73,12 @@ function agogoLow() {
   agogoLow.start();
 }
 
-function playLead(thePts){
+function playLead(thePts) {
   synth.setPitch(thePts.length);
   synth.triggerAttack();
 }
 
-
-var Synth = function() {
+var Synth = function () {
   this.freq = 440;
   this.osc0 = new Tone.Oscillator(440, 'sine');
   this.osc1 = new Tone.Oscillator(880, 'square');
@@ -120,19 +118,19 @@ var Synth = function() {
   this.osc1.start();
 }
 
-Synth.prototype.triggerAttack = function(){
+Synth.prototype.triggerAttack = function () {
   this.ampEnvelope.triggerAttack();
   this.freqEnvelope.triggerAttack();
   this.isPlaying = true;
 }
 
-Synth.prototype.triggerRelease = function(){
+Synth.prototype.triggerRelease = function () {
   this.ampEnvelope.triggerRelease();
   this.freqEnvelope.triggerRelease();
   this.isPlaying = false;
 }
 
-Synth.prototype.setPitch = function(p){
+Synth.prototype.setPitch = function (p) {
   var pitchPos = p % scale.length;
   var midiPitch = root + scale[pitchPos];
   var freq = midiToFreq(midiPitch);
