@@ -14,9 +14,9 @@ Tone.Transport.setInterval(agogoLow, '0:2:0');
 Tone.Transport.setTimeline(kickDrum, '0:3:3');
 
 function onStep() {
-  if (typeof(thePoints) !== 'undefined'){
-    if (thePoints.length > 5) {
-      playLead(thePoints);
+  if (typeof(detectPoints.points) !== 'undefined'){
+    if (detectPoints.points.length > 5) {
+      playLead(detectPoints.points);
     } else {
       synth.triggerRelease();
     }
