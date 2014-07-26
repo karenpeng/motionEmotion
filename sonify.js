@@ -4,14 +4,17 @@ var root = 60;
 Tone.Transport.loop = true;
 Tone.Transport.setLoopStart('0:0');
 Tone.Transport.setLoopEnd('2:0');
-Tone.Transport.setBpm(155);
+Tone.Transport.setBpm(98);
 Tone.Transport.start();
 Tone.Transport.setInterval(onStep, '32n');
-Tone.Transport.setInterval(kickDrum, '0:0:2');
-Tone.Transport.setInterval(snareDrum, '0:1:0');
-Tone.Transport.setInterval(agogoHigh, '1:0:0');
-Tone.Transport.setInterval(agogoLow, '0:2:0');
-Tone.Transport.setTimeline(kickDrum, '0:3:3');
+Tone.Transport.setInterval(sStep, '16n');
+// Tone.Transport.setInterval(kickDrum, '0:0:2');
+// Tone.Transport.setInterval(snareDrum, '0:1:0');
+// Tone.Transport.setInterval(agogoHigh, '1:0:0');
+// Tone.Transport.setInterval(agogoLow, '0:2:0');
+// Tone.Transport.setTimeline(kickDrum, '0:3:3');
+
+var step = 0;
 
 function onStep() {
   if (typeof(detectPoints.points) !== 'undefined'){
@@ -27,6 +30,26 @@ var kick = new Tone.Player('sounds/505/kick.mp3', playerLoaded);
 var snare = new Tone.Player('sounds/505/snare.mp3', playerLoaded);
 var agogoHigh = new Tone.Player('sounds/505/agogoHigh.mp3', playerLoaded);
 var agogoLow = new Tone.Player('sounds/505/agogoLow.mp3', playerLoaded);
+
+kick.pattern = [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0];
+snare.pattern = [0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,];
+agogoHigh.pattern = [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1];
+agogoLow.pattern = [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0];
+
+var drums = [kick, snare, agogoHigh, agogoLow]
+
+function sStep() {
+  for (var i = 0; i < drums.length; i++){
+    if (drums[i].pattern[step] == 1){
+      console.log('bang!');
+      drums[i].start();
+    }
+  }
+  step++;
+  if (step >= 16){
+    step = 0;
+  }
+}
 
 
 //player onload callback
@@ -66,8 +89,8 @@ var Synth = function() {
   this.osc1.frequency.sync(this.osc0.frequency);
 
   //create the envelopes
-  this.ampEnvelope = new Tone.Envelope(0.01, 0.1, 0.5, 0.5, 0, 0.3);
-  this.freqEnvelope = new Tone.Envelope(0.4, 0, 1, 0.8, 0, 1200);
+  this.ampEnvelope = new Tone.Envelope(0.01, 0.1, 0.5, 0.5, 0, 0.5);
+  this.freqEnvelope = new Tone.Envelope(0.2, 0, 1, 0.4, 0, 1200);
 
   //the filter
   this.lowpass = Tone.context.createBiquadFilter();
@@ -86,8 +109,11 @@ var Synth = function() {
   this.ampEnvelope.connect(this.amplitude.gain);
   this.freqEnvelope.connect(this.lowpass.frequency);
 
+  this.output = Tone.context.createGain();
+  this.output.gain.value = .2;
+  this.amplitude.connect(this.output);
   //connect it to the output
-  this.amplitude.toMaster();
+  this.output.toMaster();
   this.lowpass.toMaster();
 
   //start the oscillators

@@ -1,36 +1,42 @@
 (function (exports) {
 
-  function Calculate() {
+  function Data() {
     this.points = [];
+    this.avgX;
+    this.avgY;
+    this.totalSize;
   }
 
-  Calculate.prototype.getPoints = function (points) {
+  Data.prototype.getPoints = function (points) {
+    //console.log(points)
+    //if (points.length !== 0) {
     this.points = [];
     for (var i = 0; i < points.length; i++) {
-      this.points[i] = [points[i].x, points[i].y];
+      this.points[i] = [points[i][0], points[i][1]];
     }
+    // }
   }
 
-  Calculate.prototype.getAve = function () {
+  Data.prototype.getAvg = function () {
+    //if (this.points.length !== 0) {
     var sumX = 0;
     var sumY = 0;
     for (var i = 0; i < this.points.length; i++) {
-      var sumX += this.points[i].x;
-      var sumY += this.points[i].y;
+      sumX += this.points[i][0];
+      sumY += this.points[i][1];
     }
-    var aveX = sumX / this.points.length;
-    var aveY = sumY / this.points.length;
-    var positionData = {
-      "aveX": aveX,
-      "aveY": aveY
-    }
-    return positionData;
+    this.avgX = Math.floor(sumX / this.points.length);
+    this.avgY = Math.floor(sumY / this.points.length);
+    //console.log(this.avgX, this.avgY)
+    //}
   }
 
-  Calculate.prototype.getSize = function () {
-    for (var)
+  Data.prototype.getSize = function () {
+    // for (var j = 0; j<  ){
+
+    // }
   }
 
-  exports.Calculate = Calculate;
+  exports.Data = Data;
 
 })(this);

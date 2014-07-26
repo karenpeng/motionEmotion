@@ -137,7 +137,6 @@
 
 										}
 								}
-								// console.log(afterX.length, afterY.length, this.points.length)
 						}
 				}
 
