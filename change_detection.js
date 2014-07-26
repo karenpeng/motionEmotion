@@ -137,7 +137,7 @@
 
 										}
 								}
-								console.log(afterX.length, afterY.length, this.points.length)
+								//console.log(afterX.length, afterY.length, this.points.length)
 						}
 				}
 
