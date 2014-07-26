@@ -19,8 +19,9 @@ function update() {
 		data.getPoints(drawPoints.vertices);
 		//console.log(drawPoints.vertices.length)
 		data.getAvg();
-		console.log(data.points.length, data.avgX, data.avgY)
-
+		data.getTotalDist();
+		//console.log(data.points.length, data.avgX, data.avgY)
+		console.log(data.totalDist)
 		//cornerDetect.tick();
 }
 
