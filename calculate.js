@@ -3,7 +3,7 @@
   function calsize(maxX, minX, maxY, minY) {
     var dx = maxX - minX;
     var dy = maxY - minY;
-    var dist = dx * dx + dy * dy;
+    var dist = Math.floor(Math.sqrt(dx * dx + dy * dy));
     return dist;
   }
 
