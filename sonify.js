@@ -37,10 +37,13 @@ var snare = new Tone.Player('sounds/505/snare.mp3', playerLoaded);
 var agogoHigh = new Tone.Player('sounds/505/agogoHigh.mp3', playerLoaded);
 var agogoLow = new Tone.Player('sounds/505/agogoLow.mp3', playerLoaded);
 
-kick.pattern = [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0];
-snare.pattern = [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, ];
-agogoHigh.pattern = [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1];
+// kick.pattern = [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0];
+// snare.pattern = [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, ];
+agogoHigh.pattern = [0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1];
 agogoLow.pattern = [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0];
+kick.pattern = [1, 0, 0, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0];
+snare.pattern = [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, ];
+
 
 var drums = [kick, snare, agogoHigh, agogoLow]
 
@@ -144,8 +147,6 @@ Synth.prototype.triggerRelease = function () {
 
 Synth.prototype.setPitch = function (p) {
   var pitchPos = Math.floor( map (data.avgY, 0, height, scale.length, 0) );
-
-  // var pitchPos = p % scale.length;
   var midiPitch = root + scale[pitchPos];
   var freq = midiToFreq(midiPitch);
   this.osc0.frequency.exponentialRampToValueNow(freq, 0.1);
