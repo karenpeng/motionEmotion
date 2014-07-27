@@ -83,7 +83,6 @@ function playLead(thePts) {
   // change the filter based on maxDistance
   
   lopassFreq = map (data.totalDist, 0, maxDistance, 0, 1200);
-  console.log("Low Pass Freq: " + lopassFreq);
 
 //  synth.lowpass.frequency.exponentialRampToValueAtTime(lopassFreq, Tone.Master.now() );
 
