@@ -21,7 +21,7 @@ function update() {
 		data.getAvg();
 		data.getTotalDist();
 		//console.log(data.points.length, data.avgX, data.avgY)
-		console.log(data.totalDist)
+		// console.log(data.totalDist)
 		//cornerDetect.tick();
 }
 
