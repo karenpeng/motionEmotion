@@ -1,7 +1,7 @@
 var myCanvas = document.getElementById("myCanvas");
 var width = myCanvas.width;
 var height = myCanvas.height;
-var maxDistance = Math.sqrt( Math.pow(width,2) + Math.pow(height,2) );
+var maxDistance = Math.sqrt(Math.pow(width, 2) + Math.pow(height, 2));
 
 var scale = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21, 24];
 var root = 48;
@@ -44,7 +44,6 @@ agogoLow.pattern = [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0];
 kick.pattern = [1, 0, 0, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0];
 snare.pattern = [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, ];
 
-
 var drums = [kick, snare, agogoHigh, agogoLow]
 
 function sStep() {
@@ -84,10 +83,10 @@ function agogoLow() {
 
 function playLead(thePts) {
   // change the filter based on maxDistance
-  
-  lopassFreq = map (data.totalDist, 0, maxDistance, 0, 1200);
 
-//  synth.lowpass.frequency.exponentialRampToValueAtTime(lopassFreq, Tone.Master.now() );
+  lopassFreq = map(data.totalDist, 0, maxDistance, 0, 1200);
+
+  //  synth.lowpass.frequency.exponentialRampToValueAtTime(lopassFreq, Tone.Master.now() );
 
   synth.setPitch(thePts.length);
   synth.triggerAttack();
@@ -146,7 +145,7 @@ Synth.prototype.triggerRelease = function () {
 }
 
 Synth.prototype.setPitch = function (p) {
-  var pitchPos = Math.floor( map (data.avgY, 0, height, scale.length, 0) );
+  var pitchPos = Math.floor(map(data.avgY, 0, height, scale.length, 0));
   var midiPitch = root + scale[pitchPos];
   var freq = midiToFreq(midiPitch);
   this.osc0.frequency.exponentialRampToValueNow(freq, 0.1);
@@ -154,11 +153,11 @@ Synth.prototype.setPitch = function (p) {
 
 synth = new Synth();
 
-midiToFreq = function(m) {
-    return 440 * Math.pow(2, (m-69)/12.0);
+midiToFreq = function (m) {
+  return 440 * Math.pow(2, (m - 69) / 12.0);
 };
 
-FMSynth = function() {
+FMSynth = function () {
   this.signal = new Tone.Signal;
   this.add1 = new Tone.Add
   this.osc1 = new Tone.Oscillator(440, 'sine');
@@ -167,10 +166,9 @@ FMSynth = function() {
   this.add1.connect(this.osc1.frequency);
 }
 
-FMSynth.prototype.setPitch = function(p) {
+FMSynth.prototype.setPitch = function (p) {
   this.signal.exponentialRampToValueNow(freq, 0.1);
 };
-
 
 function map(para, orMin, orMax, tarMin, tarMax) {
   var ratio = (para - orMin) / (orMax - orMin);

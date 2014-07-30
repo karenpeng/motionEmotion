@@ -7,48 +7,48 @@
  */
 
 var WEBCAM = {
-		init: function () {
-				"use strict";
+  init: function () {
+    "use strict";
 
-				function onWebcamFail() {
-						alert('There are problems with the webcam stream.');
-				}
+    function onWebcamFail() {
+      alert('There are problems with the webcam stream.');
+    }
 
-				function hasGetUserMedia() {
-						// Note: Opera builds are unprefixed.
-						return !!(navigator.getUserMedia || navigator.webkitGetUserMedia ||
-								navigator.mozGetUserMedia || navigator.msGetUserMedia);
-				}
+    function hasGetUserMedia() {
+      // Note: Opera builds are unprefixed.
+      return !!(navigator.getUserMedia || navigator.webkitGetUserMedia ||
+        navigator.mozGetUserMedia || navigator.msGetUserMedia);
+    }
 
-				if (!hasGetUserMedia()) {
-						alert('getUserMedia() is not supported, please use Google Chorme');
-				}
+    if (!hasGetUserMedia()) {
+      alert('getUserMedia() is not supported, please use Google Chorme');
+    }
 
-				var self = this,
-						captureTimer,
-						video = document.querySelector('video');
+    var self = this,
+      captureTimer,
+      video = document.querySelector('video');
 
-				self.video = video;
+    self.video = video;
 
-				// Not showing vendor prefixes or code that works cross-browser.
-				if (navigator.getUserMedia) {
-						navigator.getUserMedia({
-								video: true
-						}, function (stream) {
-								self.video.src = stream;
-								self.localMediaStream = stream;
-						}, onWebcamFail);
-				} else if (navigator.webkitGetUserMedia) {
-						navigator.webkitGetUserMedia({
-								video: true
-						}, function (stream) {
-								self.video.src = window.webkitURL.createObjectURL(stream);
-								self.localMediaStream = stream;
-						}, onWebcamFail);
-				} else {
-						onWebcamFail();
-				}
-		}
+    // Not showing vendor prefixes or code that works cross-browser.
+    if (navigator.getUserMedia) {
+      navigator.getUserMedia({
+        video: true
+      }, function (stream) {
+        self.video.src = stream;
+        self.localMediaStream = stream;
+      }, onWebcamFail);
+    } else if (navigator.webkitGetUserMedia) {
+      navigator.webkitGetUserMedia({
+        video: true
+      }, function (stream) {
+        self.video.src = window.webkitURL.createObjectURL(stream);
+        self.localMediaStream = stream;
+      }, onWebcamFail);
+    } else {
+      onWebcamFail();
+    }
+  }
 };
 
 WEBCAM.init();

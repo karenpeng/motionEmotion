@@ -8,29 +8,29 @@ var drawPoints = new DrawPoints(myCanvas);
 var data = new Data();
 
 function setup() {
-		detectPoints.init();
-		//cornerDetect.init();
+  detectPoints.init();
+  //cornerDetect.init();
 }
 
 function update() {
-		detectPoints.draw();
-		drawPoints.getPoints(detectPoints.points, detectPoints.width, detectPoints.height);
-		drawPoints.draw();
-		data.getPoints(drawPoints.vertices);
-		//console.log(drawPoints.vertices.length)
-		data.getAvg();
-		data.getTotalDist();
-		//console.log(data.points.length, data.avgX, data.avgY)
-		// console.log(data.totalDist)
+  detectPoints.draw();
+  drawPoints.getPoints(detectPoints.points, detectPoints.width, detectPoints.height);
+  drawPoints.draw();
+  data.getPoints(drawPoints.vertices);
+  //console.log(drawPoints.vertices.length)
+  data.getAvg();
+  data.getTotalDist();
+  //console.log(data.points.length, data.avgX, data.avgY)
+  // console.log(data.totalDist)
 
-		//cornerDetect.tick();
+  //cornerDetect.tick();
 }
 
 function loop(callback) {
-		requestAnimationFrame(function () {
-				loop(callback);
-		});
-		callback();
+  requestAnimationFrame(function () {
+    loop(callback);
+  });
+  callback();
 }
 
 setup();
