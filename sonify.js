@@ -11,14 +11,10 @@ Tone.Transport.loop = true;
 Tone.Transport.setLoopStart('0:0');
 Tone.Transport.setLoopEnd('2:0');
 Tone.Transport.setBpm(98);
-Tone.Transport.start();
+// Tone.Transport.start();
 Tone.Transport.setInterval(onStep, '64n');
 Tone.Transport.setInterval(sStep, '16n');
-// Tone.Transport.setInterval(kickDrum, '0:0:2');
-// Tone.Transport.setInterval(snareDrum, '0:1:0');
-// Tone.Transport.setInterval(agogoHigh, '1:0:0');
-// Tone.Transport.setInterval(agogoLow, '0:2:0');
-// Tone.Transport.setTimeline(kickDrum, '0:3:3');
+
 
 var step = 0;
 
@@ -32,7 +28,8 @@ function onStep() {
   }
 }
 
-var kick = new Tone.Player('sounds/505/kick.mp3', playerLoaded);
+// var kick = new Tone.Player('sounds/505/kick.mp3', playerLoaded);
+var kick = new Tone.FMSynth
 var snare = new Tone.Player('sounds/505/snare.mp3', playerLoaded);
 var agogoHigh = new Tone.Player('sounds/505/agogoHigh.mp3', playerLoaded);
 var agogoLow = new Tone.Player('sounds/505/agogoLow.mp3', playerLoaded);
