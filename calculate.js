@@ -25,6 +25,10 @@
     }
   };
 
+  Data.prototype.getPointsNum = function (pLength) {
+    this.pointNumber = pLength;
+  };
+
   Data.prototype.getTriangleNum = function (triLength) {
     this.triangleNumber = triLength;
   };

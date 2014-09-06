@@ -6,7 +6,7 @@
     this.c = c;
     this.hue = Math.floor(Math.random() * 360);
     this.lightness = Math.floor(Math.random() * 50 + 50);
-    this.alpha = 0.9;
+    this.alpha = 0.8;
     this.lightUp = false;
   }
   MyTriangle.prototype.update = function () {
@@ -41,6 +41,7 @@
     this.width = this.can.width;
     this.height = this.can.height;
     this.myTriangles = [];
+    this.vertices = [];
   }
 
   DrawPoints.prototype.updatePoints = function (points, width, height) {
@@ -75,7 +76,9 @@
 
     if (this.myTriangles.length > 0) {
       for (var l = 0; l < this.myTriangles.length; l++) {
-        if (this.myTriangles[l].update()) {
+        if (!this.myTriangles[l].update()) {
+          this.myTriangles.splice(l, 1);
+        } else {
           this.myTriangles[l].render(this.ctx);
         }
       }
