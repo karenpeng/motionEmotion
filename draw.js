@@ -80,47 +80,9 @@
         }
       }
     }
-    /*
-    for (var l = this.triangles.length; l >= 3; l -= 3) {
-      var hue = Math.floor(Math.random() * 360);
-      var saturation = '100%';
-      var lightness = Math.floor(Math.random() * 50 + 50);
-      var al = Math.random() * 0.5 + 0.5;
-      this.ctx.fillStyle = "hsla(" + hue.toString() + "," + saturation + "," +
-        lightness.toString() + "%" + "," + al.toString() + ")";
-      //this.ctx.strokeStyle = this.ctx.fillStyle;
-      this.ctx.beginPath();
-      this.ctx.moveTo(this.vertices[this.triangles[l - 1]][0], this.vertices[
-        this.triangles[l - 1]][
-        1
-      ]);
-      this.ctx.lineTo(this.vertices[this.triangles[l - 2]][0], this.vertices[
-        this.triangles[l - 2]][
-        1
-      ]);
-      this.ctx.lineTo(this.vertices[this.triangles[l - 3]][0], this.vertices[
-        this.triangles[l - 3]][
-        1
-      ]);
-      this.ctx.closePath();
-      //this.ctx.stroke();
-      this.ctx.fill();
-    }
-    */
-  }
 
-  // function Point(x, y) {
-  // 		this.x = x;
-  // 		this.y = y;
-  // }
-  // // Point.prototype.update = function () {
-  // // 		this.life--;
-  // // 		return this.life < 0;
-  // // };
-  // Point.prototype.render = function (ctx, radius) {
-  // 	//ctx.fillStyle = "#ff00ff";
-  // 	ctx.fillRect(this.x, this.y, radius, radius);
-  // };
+  };
+
   exports.DrawPoints = DrawPoints;
 
 })(this);
