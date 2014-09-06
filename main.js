@@ -3,7 +3,6 @@ var myCanvas = document.getElementById("myCanvas");
 
 var detectPoints = new DetectPoints(debugCanvas);
 var drawPoints = new DrawPoints(myCanvas);
-//var cornerDetect = new CornerDetect(debugCanvas);
 var preDetectPoints = [];
 
 var data = new Data();
@@ -33,13 +32,12 @@ function update() {
   drawPoints.draw();
 
   data.getPoints(drawPoints.vertices);
-  //console.log(drawPoints.vertices.length)
+
+  data.getTriangleNum(drawPoints.myTriangles.length);
+  //console.log(data.triangleNumber);
+
   data.getAvg();
   data.getTotalDist();
-  //console.log(data.points.length, data.avgX, data.avgY)
-  //console.log(data.totalDist)
-
-  //cornerDetect.tick();
 
 }
 
