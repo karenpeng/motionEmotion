@@ -37,8 +37,19 @@ function update() {
   drawPoints.draw();
   if (drawPoints.myTriangles.length > 0) {
     if (drawPoints.myTriangles[0].alpha < 0.6) {
-      freezeCallback();
+      startCounting = true;
+    } else {
+      startCounting = false;
+      timer = 0;
     }
+  }
+
+  if (startCounting) {
+    timer++;
+  }
+
+  if (timer === 1) {
+    freezeCallback();
   }
 
   data.getPoints(drawPoints.vertices);
