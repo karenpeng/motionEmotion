@@ -31,6 +31,5 @@ function emoLoop() {
     setScale(maxEmo);
     currentEmo = maxEmo;
     prevEmo = maxEmo;
-    console.log(currentEmo + maxVal);
   }
 }

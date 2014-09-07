@@ -12,8 +12,7 @@ var minSev = [0, 3, 7, 10, 12, 15, 19, 22];
 var direction = 0;
 
 function setScale(emotion) {
-  direction = Math.floor(Math.random() * 3);
-  console.log(direction);
+  direction = Math.floor(Math.random() * 2);
   switch(emotion) {
     case 'happy':
       Tone.Transport.setBpm(100);
@@ -21,12 +20,12 @@ function setScale(emotion) {
       scale = pentatonic;
       break;
     case 'sad':
-      Tone.Transport.setBpm(75);
+      Tone.Transport.setBpm(50);
       root = 45;
       scale = sus;
       break;
     case 'surprised':
-      Tone.Transport.setBpm(125);
+      Tone.Transport.setBpm(150);
       root = 52;
       scale = sus;
       break;
@@ -81,7 +80,7 @@ arpFilter.toMaster();
 arpFilter.frequency.setValue(1500);
 
 function triggerArp(time) {
-  var n = midiToFreq( root + scale [arpStep] );
+  var n = midiToFreq( root + scale [arpStep % scale.length] );
   arp.triggerAttack(n, time, data.triangleAlpha);
   arp.triggerRelease(n, time + arp.toSeconds('16n') );
 
@@ -92,14 +91,14 @@ function triggerArp(time) {
     case 1:
       arpStep--;
       break;
-    case 2:
-      arpStep = Math.floor(Math.random() * scale.length);
-      break;
+    // case 2:
+    //   arpStep = Math.floor(Math.random() * scale.length);
+    //   break;
   }
   if (arpStep >= data.triangleNumber) {
     arpStep = 0;
   } else if (arpStep < 0) {
-    arpStep = scale.length -1;
+    arpStep = data.triangleNumber;
   }
 }
 
@@ -109,11 +108,11 @@ bass.toMaster();
 bass.setVolume(-16);
 bass.filterEnvelope.setMax(700);
 bass.filter.Q.setValue(7);
-// bass.filter.setRolloff(-24);
+bass.envelope.release = 3;
 var bassIsOn = false;
 
 function triggerBass(time) {
-  if (data.triangleAlpha > 0.2) {
+  if (data.triangleAlpha > 0.5) {
     var bassQ = map(data.avgX, 0, height, 1, 8);
     bass.filterEnvelope.setMax(bassQ * 150);
     bass.filter.Q.setValue(bassQ);

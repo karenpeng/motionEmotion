@@ -76,11 +76,19 @@ function loop(callback) {
   requestAnimationFrame(function () {
     loop(callback);
   });
+  // if (vid) {
+  //   var context = myCanvas.getContext('2d');
+  //   context.clearRect(0,0,myCanvas.width,myCanvas.height);
+  //   context.drawImage(vid,0,0,myCanvas.width,myCanvas.height);
+  //   context.putImageData(grayscale(context.getImageData(0,0,myCanvas.width,myCanvas.height)),0,0);
+  // }
+
   callback();
 
   if (typeof(emoLoop) !== 'undefined'){
     emoLoop();
   }
+
 }
 
 setup();
