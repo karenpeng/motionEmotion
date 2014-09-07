@@ -10,7 +10,7 @@
     this.lightUp = false;
   }
   MyTriangle.prototype.update = function () {
-    this.alpha -= 0.002;
+    this.alpha *= 0.95;
     return this.alpha > 0;
   };
 
