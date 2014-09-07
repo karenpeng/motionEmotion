@@ -11,7 +11,7 @@ var startCounting = false;
 var maxThreshold = 18;
 
 function freezeCallback() {
-  console.log("freeze!");
+
 }
 
 function setup() {
@@ -36,7 +36,7 @@ function update() {
 
   drawPoints.draw();
   if (drawPoints.myTriangles.length > 0) {
-    if (drawPoints.myTriangles[0].alpha < 0.6) {
+    if (drawPoints.myTriangles[0].alpha < 0.64) {
       startCounting = true;
     } else {
       startCounting = false;
@@ -57,6 +57,12 @@ function update() {
 
   data.getPointsNum(drawPoints.vertices.length);
   //console.log(data.pointNumber);
+  if (drawPoints.myTriangles.length > 0) {
+    data.getTriangleAlpha(drawPoints.myTriangles[0].alpha);
+  } else {
+    data.triangleAlpha = 0;
+  }
+  //console.log(data.triangleAlpha);
 
   data.getTriangleNum(drawPoints.myTriangles.length);
   //console.log(data.triangleNumber);
