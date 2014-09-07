@@ -77,6 +77,10 @@ function loop(callback) {
     loop(callback);
   });
   callback();
+
+  if (typeof(emoLoop) !== 'undefined'){
+    emoLoop();
+  }
 }
 
 setup();
