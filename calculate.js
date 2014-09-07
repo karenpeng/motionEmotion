@@ -19,17 +19,21 @@
   }
 
   Data.prototype.getPoints = function (points) {
-    //console.log(points)
-    //if (points.length !== 0) {
     this.points = [];
     for (var i = 0; i < points.length; i++) {
       this.points[i] = [points[i][0], points[i][1]];
     }
-    // }
-  }
+  };
+
+  Data.prototype.getPointsNum = function (pLength) {
+    this.pointNumber = pLength;
+  };
+
+  Data.prototype.getTriangleNum = function (triLength) {
+    this.triangleNumber = triLength;
+  };
 
   Data.prototype.getAvg = function () {
-    //if (this.points.length !== 0) {
     var sumX = 0;
     var sumY = 0;
     for (var i = 0; i < this.points.length; i++) {
@@ -38,9 +42,7 @@
     }
     this.avgX = Math.floor(sumX / this.points.length);
     this.avgY = Math.floor(sumY / this.points.length);
-    //console.log(this.avgX, this.avgY)
-    //}
-  }
+  };
 
   Data.prototype.getTotalDist = function () {
     if (this.points.length !== 0) {

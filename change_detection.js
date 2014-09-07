@@ -20,7 +20,6 @@
     this.previousColorY = [];
     this.colorDiffShrehold = 40;
     this.points = [];
-    //this.triangles;
   }
 
   DetectPoints.prototype.init = function () {
@@ -50,7 +49,7 @@
     var index = 0;
     var index2 = 0;
 
-    var rawPoints = [];
+    var rawPointsX = [];
     var rawPointsY = [];
     //if (0 > 1) {
     if (WEBCAM.localMediaStream) {
@@ -64,13 +63,7 @@
           var colorDifferenceX = colorDiff(this.previousColorX[index], this.currentColorX[
             index]);
           if (colorDifferenceX > this.colorDiffShrehold) {
-            //this.points.push(new Point(i, j));
-            rawPoints.push([i, j]);
-            // vertices.push([
-            // 		// i * condenseRate + Math.random() * 12 - 6, j * condenseRate +
-            // 		// Math.random() * 12 - 6
-            // 		i * condenseRate , j * condenseRate
-            // ]);
+            rawPointsX.push([i, j]);
           }
           this.previousColorX[index] = this.currentColorX[index];
           index++;
@@ -105,12 +98,12 @@
       var getIndexes = [];
       var afterX = [];
       var afterY = [];
-      for (var it = 1; it < rawPoints.length - 1; it++) {
-        if (rawPoints[it][0] + this.sampleRate !== rawPoints[it + 1][0] ||
-          rawPoints[it][0] - this.sampleRate !== rawPoints[it - 1][0]) {
+      for (var it = 1; it < rawPointsX.length - 1; it++) {
+        if (rawPointsX[it][0] + this.sampleRate !== rawPointsX[it + 1][0] ||
+          rawPointsX[it][0] - this.sampleRate !== rawPointsX[it - 1][0]) {
           //getIndexes.push(it);
           //this.points.push(new Point(rawPoints[it][0], rawPoints[it][1], "#ff00ff"));
-          afterX.push([rawPoints[it][0], rawPoints[it][1]]);
+          afterX.push([rawPointsX[it][0], rawPointsX[it][1]]);
         }
       }
 
@@ -142,12 +135,7 @@
 
     if (this.points !== []) {
       for (var k = 0; k < this.points.length - 1; k++) {
-        if (this.points[k].update()) {
-          this.points.splice(k, 1);
-          //vertices.splice(k, 1);
-        } else {
-          this.points[k].render(this.can, 2);
-        }
+        this.points[k].render(this.can, 2);
       }
 
     }
@@ -156,13 +144,8 @@
   function Point(x, y, fillStyle) {
     this.x = x;
     this.y = y;
-    this.life = 60;
     this.fillStyle = fillStyle;
   }
-  Point.prototype.update = function () {
-    this.life--;
-    return this.life < 0;
-  };
   Point.prototype.render = function (can, radius) {
     ctx = can.getContext("2d");
     ctx.fillStyle = this.fillStyle;
