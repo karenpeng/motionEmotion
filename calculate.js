@@ -33,6 +33,10 @@
     this.triangleNumber = triLength;
   };
 
+  Data.prototype.getTriangleAlpha = function (alpha) {
+    this.triangleAlpha = alpha;
+  };
+
   Data.prototype.getAvg = function () {
     var sumX = 0;
     var sumY = 0;
