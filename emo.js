@@ -20,7 +20,7 @@ function emoLoop() {
   var cp = ctrack.getCurrentParameters();
   var er = ec.meanPredict(cp);
   var maxEmo = null;
-  var maxVal = 0.5;
+  var maxVal = 0.7;
   for (var i in er) {
     if (er[i].value > maxVal) {
       maxEmo = er[i].emotion;
@@ -28,7 +28,7 @@ function emoLoop() {
     }
   }
   if (maxEmo !== prevEmo) {
-    setScale(maxEmo);
+    setNewEmo(maxEmo);
     currentEmo = maxEmo;
     prevEmo = maxEmo;
   }

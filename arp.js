@@ -2,7 +2,9 @@ var myCanvas = document.getElementById("myCanvas");
 var width = myCanvas.width;
 var height = myCanvas.height;
 var maxDistance = Math.sqrt(Math.pow(width, 2) + Math.pow(height, 2));
+var prevTriangles;
 
+var root = 48;
 var scale = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21, 24, 26, 28, 31, 33, 36];
 var pentatonic = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21, 24, 26, 28, 31, 33, 36];
 var major = [0, 4, 7, 12, 16, 19, 24, 28, 31];
@@ -11,33 +13,76 @@ var sus = [0, 5, 7, 12, 17, 19, 24, 29, 31];
 var minSev = [0, 3, 7, 10, 12, 15, 19, 22];
 var direction = 0;
 
-function setScale(emotion) {
+/*
+  Play a sound when we have a new emotion
+ */
+function setNewEmo(emotion) {
   direction = Math.floor(Math.random() * 2);
+  console.log(emotion);
   switch(emotion) {
     case 'happy':
+      emoSound = agogoLow;
       Tone.Transport.setBpm(100);
       root = 48;
       scale = pentatonic;
       break;
     case 'sad':
+      emoSound = kick;
       Tone.Transport.setBpm(50);
       root = 45;
       scale = sus;
       break;
     case 'surprised':
+      emoSound = agogoHigh;
       Tone.Transport.setBpm(150);
       root = 52;
       scale = sus;
       break;
     case 'angry':
+      emoSound = hh;
       Tone.Transport.setBpm(66.69);
       root = 46;
       scale = minSev;
       break;
   }
+  Tone.Transport.setTimeout(function(time){
+    playNewEmoSound(time);
+  }, '16n');
 }
 
-var root = 48;
+var kick = new Tone.Player('sounds/505/snare.mp3', playerLoaded);
+var agogoHigh = new Tone.Player('sounds/505/agogoHigh.mp3', playerLoaded);
+var agogoLow = new Tone.Player('sounds/505/agogoLow.mp3', playerLoaded);
+var hh = new Tone.Player('sounds/505/hh.mp3', playerLoaded);
+var kickFilter = new Tone.Filter();
+kickFilter.frequency.setValue(1000);
+var kickPong = new Tone.PingPongDelay('8t');
+var kickPongTwo = new Tone.PingPongDelay('16n');
+kickPongTwo.setFeedback(0.8);
+kick.fan(kick.output, kickPongTwo, kickFilter);
+agogoHigh.fan(agogoHigh.output, kickPongTwo, kickFilter);
+agogoLow.fan(agogoLow.output, kickPongTwo, kickFilter);
+hh.fan(hh.output, kickPongTwo, kickFilter);
+kickFilter.connect(kickPongTwo);
+var b = Tone.context.createGain();
+kickPongTwo.connect(kickPong);
+kickPong.connect(b);
+b.gain.value = 0.2;
+b.toMaster();
+
+function playerLoaded(player) {
+  //able to be retriggered before the file is done playing
+  player.retrigger = true;
+  player.connect(kickPong);
+}
+
+var emoSound = kick;
+
+function playNewEmoSound(time) {
+  emoSound.start(time);
+}
+
+
 
 Tone.Transport.loop = true;
 Tone.Transport.setLoopStart('0:0');
@@ -47,32 +92,12 @@ Tone.Transport.start();
 Tone.Transport.setInterval(triggerBass, '32n');
 Tone.Transport.setInterval(triggerArp, '16n');
 
-Tone.Transport.setInterval(kick, 1 * Tone.Transport.toSeconds('1n'));
-var kick = new Tone.Player('sounds/505/kick.mp3', playerLoaded);
-var kickPong = new Tone.PingPongDelay('16n');
-kickPong.setFeedback(0.8);
-var kickFilter = new Tone.Filter();
-kickPong.connect(kickFilter);
-kickFilter.toMaster();
-
-function kick() {
-  kick.start();
-}
-
-function playerLoaded(player) {
-  //able to be retriggered before the file is done playing
-  player.retrigger = true;
-  player.connect(kickPong);
-}
-
 var step = 0;
-
-var prevTriangles;
 
 var arpStep = 0;
 var arp = new Tone.FMSynth();
 var pingPong = new Tone.PingPongDelay('8n');
-pingPong.setFeedback(0.5);
+pingPong.setFeedback(0.8);
 arp.connect(pingPong);
 arpFilter = new Tone.Filter();
 pingPong.connect(arpFilter);
@@ -91,9 +116,6 @@ function triggerArp(time) {
     case 1:
       arpStep--;
       break;
-    // case 2:
-    //   arpStep = Math.floor(Math.random() * scale.length);
-    //   break;
   }
   if (arpStep >= data.triangleNumber) {
     arpStep = 0;
@@ -113,11 +135,11 @@ var bassIsOn = false;
 
 function triggerBass(time) {
   if (data.triangleAlpha > 0.5) {
-    var bassQ = map(data.avgX, 0, height, 1, 8);
-    bass.filterEnvelope.setMax(bassQ * 150);
+    var bassQ = map(data.totalDist, 0, maxDistance, 5, 8);
+    bass.filterEnvelope.setMax(data.totalDist + 200);
     bass.filter.Q.setValue(bassQ);
     var pitchPos = Math.floor(map(data.avgY, 0, height, scale.length, 0));
-    var midiPitch = root - 36 + scale[pitchPos];
+    var midiPitch = root - 24 + scale[pitchPos];
     var freq = midiToFreq(midiPitch);
     bass.frequency.exponentialRampToValueNow(freq, '64n');
     if (!bassIsOn) {
