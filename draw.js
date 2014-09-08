@@ -10,7 +10,8 @@
     this.lightUp = false;
   }
   MyTriangle.prototype.update = function () {
-    this.alpha *= 0.95;
+    this.alpha *=  Math.max(Math.min(map(data.triangleNumber, 0, 10, 0.9, 0.99), 0.995), 0.85); //0.99 data.triangleNumber;
+    // this.alpha = a
     return this.alpha > 0;
   };
 

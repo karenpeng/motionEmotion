@@ -2,36 +2,125 @@ var myCanvas = document.getElementById("myCanvas");
 var width = myCanvas.width;
 var height = myCanvas.height;
 var maxDistance = Math.sqrt(Math.pow(width, 2) + Math.pow(height, 2));
+var prevTriangles;
 
-var scale = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21, 24, 26, 28, 31, 33, 36];
 var root = 48;
+var scale = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21, 24, 26, 28, 31, 33, 36];
+var pentatonic = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21, 24, 26, 28, 31, 33, 36];
+var major = [0, 4, 7, 12, 16, 19, 24, 28, 31];
+var minor = [0, 3, 7, 12, 15, 19, 24, 27, 31];
+var sus = [0, 5, 7, 12, 17, 19, 24, 29, 31];
+var minSev = [0, 3, 7, 10, 12, 15, 19, 22];
+var direction = 0;
+
+/*
+  Play a sound when we have a new emotion
+ */
+function setNewEmo(emotion) {
+  direction = Math.floor(Math.random() * 2);
+  console.log(emotion);
+  switch(emotion) {
+    case 'happy':
+      emoSound = agogoLow;
+      Tone.Transport.setBpm(100);
+      root = 48;
+      scale = pentatonic;
+      break;
+    case 'sad':
+      emoSound = kick;
+      Tone.Transport.setBpm(50);
+      root = 45;
+      scale = sus;
+      break;
+    case 'surprised':
+      emoSound = agogoHigh;
+      Tone.Transport.setBpm(150);
+      root = 52;
+      scale = sus;
+      break;
+    case 'angry':
+      emoSound = hh;
+      Tone.Transport.setBpm(66.69);
+      root = 46;
+      scale = minSev;
+      break;
+  }
+  Tone.Transport.setTimeout(function(time){
+    playNewEmoSound(time);
+  }, '16n');
+}
+
+var kick = new Tone.Player('sounds/505/snare.mp3', playerLoaded);
+var agogoHigh = new Tone.Player('sounds/505/agogoHigh.mp3', playerLoaded);
+var agogoLow = new Tone.Player('sounds/505/agogoLow.mp3', playerLoaded);
+var hh = new Tone.Player('sounds/505/hh.mp3', playerLoaded);
+var kickFilter = new Tone.Filter();
+kickFilter.frequency.setValue(1000);
+var kickPong = new Tone.PingPongDelay('8t');
+var kickPongTwo = new Tone.PingPongDelay('16n');
+kickPongTwo.setFeedback(0.8);
+kick.fan(kick.output, kickPongTwo, kickFilter);
+agogoHigh.fan(agogoHigh.output, kickPongTwo, kickFilter);
+agogoLow.fan(agogoLow.output, kickPongTwo, kickFilter);
+hh.fan(hh.output, kickPongTwo, kickFilter);
+kickFilter.connect(kickPongTwo);
+var b = Tone.context.createGain();
+kickPongTwo.connect(kickPong);
+kickPong.connect(b);
+b.gain.value = 0.2;
+b.toMaster();
+
+function playerLoaded(player) {
+  //able to be retriggered before the file is done playing
+  player.retrigger = true;
+  player.connect(kickPong);
+}
+
+var emoSound = kick;
+
+function playNewEmoSound(time) {
+  emoSound.start(time);
+}
+
 
 Tone.Transport.loop = true;
 Tone.Transport.setLoopStart('0:0');
 Tone.Transport.setLoopEnd('2:0');
-Tone.Transport.setBpm(98);
+Tone.Transport.setBpm(100);
 Tone.Transport.start();
 Tone.Transport.setInterval(triggerBass, '32n');
 Tone.Transport.setInterval(triggerArp, '16n');
 
 var step = 0;
 
-var prevTriangles;
-
 var arpStep = 0;
 var arp = new Tone.FMSynth();
 var pingPong = new Tone.PingPongDelay('8n');
-pingPong.setFeedback(0.7);
+pingPong.setFeedback(0.8);
 arp.connect(pingPong);
-pingPong.toMaster();
+arpFilter = new Tone.Filter();
+pingPong.connect(arpFilter);
+arpFilter.toMaster();
+arpFilter.frequency.setValue(1500);
 
 function triggerArp(time) {
-  var n = midiToFreq( root + scale [arpStep] );
+  console.log('arp');
+  var n = midiToFreq( root + scale [arpStep % scale.length] );
   arp.triggerAttack(n, time, data.triangleAlpha);
   arp.triggerRelease(n, time + arp.toSeconds('16n') );
-  arpStep++;
+
+  switch(direction) {
+    case 0:
+      arpStep++;
+      break;
+    case 1:
+      arpStep--;
+      break;
+  }
   if (arpStep >= data.triangleNumber) {
     arpStep = 0;
+  } else if (arpStep < 0) {
+    arpStep = data.triangleNumber;
   }
 }
 
@@ -39,15 +128,25 @@ var bass = new Tone.MonoSynth();
 bass.setPreset('Bassy');
 bass.toMaster();
 bass.setVolume(-16);
-bass.filterEnvelope.setMax(1000);
+bass.filterEnvelope.setMax(700);
 bass.filter.Q.setValue(7);
-// bass.filter.setRolloff(-24);
+bass.envelope.release = 3;
 var bassIsOn = false;
 
 function triggerBass(time) {
-  if (data.triangleAlpha > 0.2) {
+  var offset = -24;
+  var bassQ = map(data.totalDist, 0, maxDistance, 5, 8);
+  if (data.avgX < width/3) {
+    offset = 24;
+    bass.filterEnvelope.setMax(2000);
+    bass.filter.Q.setValue(bassQ - 4);
+  } else {
+    bass.filterEnvelope.setMax(data.totalDist + 200);
+    bass.filter.Q.setValue(bassQ);
+  }
+  if (data.triangleAlpha > 0.5) {
     var pitchPos = Math.floor(map(data.avgY, 0, height, scale.length, 0));
-    var midiPitch = root - 48 + scale[pitchPos];
+    var midiPitch = root + offset + scale[pitchPos];
     var freq = midiToFreq(midiPitch);
     bass.frequency.exponentialRampToValueNow(freq, '64n');
     if (!bassIsOn) {
