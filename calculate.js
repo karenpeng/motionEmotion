@@ -80,7 +80,7 @@
     } else {
       this.totalDist = 0;
     }
-  }
+  };
 
   exports.Data = Data;
 

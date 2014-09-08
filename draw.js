@@ -5,28 +5,24 @@
     this.b = b;
     this.c = c;
     this.hue = Math.floor(Math.random() * 360);
-    this.lightness = Math.floor(Math.random() * 50 + 50);
+    this.lightnessOffset = 0;
+    this.lightnessDecay = 0;
     this.alpha = 0.8;
     this.lightUp = false;
   }
   MyTriangle.prototype.update = function () {
-    this.alpha *= Math.max(Math.min(map(data.triangleNumber, 0, 10, 0.9, 0.99),
-      0.995), 0.85); //0.99 data.triangleNumber;
+    this.alpha *= map(data.pointNumber, 3, 18, 0.9, 0.99); //0.99 data.triangleNumber;
     // this.alpha = a
+    this.lightnessOffset -= this.lightnessDecay;
+    this.lightness = this.lightnessOffset + 50;
     return this.alpha > 0;
   };
 
   MyTriangle.prototype.render = function (ctx) {
     var saturation = '100%';
-    if (!this.lightUp) {
-      ctx.fillStyle = "hsla(" + this.hue.toString() + "," + saturation + "," +
-        this.lightness.toString() +
-        "%" + "," + this.alpha + ")";
-    } else {
-      ctx.fillStyle = "hsla(" + this.hue.toString() + "," + saturation + "," +
-        this.lightness.toString() +
-        "%" + ")";
-    }
+    ctx.fillStyle = "hsla(" + this.hue.toString() + "," + saturation + "," +
+      this.lightness.toString() +
+      "%" + "," + this.alpha + ")";
     //ctx.strokeStyle = ctx.fillStyle;
     ctx.beginPath();
     ctx.moveTo(this.a[0], this.a[1]);

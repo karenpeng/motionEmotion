@@ -19,33 +19,33 @@ var direction = 0;
 function setNewEmo(emotion) {
   direction = Math.floor(Math.random() * 2);
   console.log(emotion);
-  switch(emotion) {
-    case 'happy':
-      emoSound = agogoLow;
-      Tone.Transport.setBpm(100);
-      root = 48;
-      scale = pentatonic;
-      break;
-    case 'sad':
-      emoSound = kick;
-      Tone.Transport.setBpm(50);
-      root = 45;
-      scale = sus;
-      break;
-    case 'surprised':
-      emoSound = agogoHigh;
-      Tone.Transport.setBpm(150);
-      root = 52;
-      scale = sus;
-      break;
-    case 'angry':
-      emoSound = hh;
-      Tone.Transport.setBpm(66.69);
-      root = 46;
-      scale = minSev;
-      break;
+  switch (emotion) {
+  case 'happy':
+    emoSound = agogoLow;
+    Tone.Transport.setBpm(100);
+    root = 48;
+    scale = pentatonic;
+    break;
+  case 'sad':
+    emoSound = kick;
+    Tone.Transport.setBpm(50);
+    root = 45;
+    scale = sus;
+    break;
+  case 'surprised':
+    emoSound = agogoHigh;
+    Tone.Transport.setBpm(150);
+    root = 52;
+    scale = sus;
+    break;
+  case 'angry':
+    emoSound = hh;
+    Tone.Transport.setBpm(66.69);
+    root = 46;
+    scale = minSev;
+    break;
   }
-  Tone.Transport.setTimeout(function(time){
+  Tone.Transport.setTimeout(function (time) {
     playNewEmoSound(time);
   }, '16n');
 }
@@ -82,7 +82,6 @@ function playNewEmoSound(time) {
   emoSound.start(time);
 }
 
-
 Tone.Transport.loop = true;
 Tone.Transport.setLoopStart('0:0');
 Tone.Transport.setLoopEnd('2:0');
@@ -104,24 +103,26 @@ arpFilter.toMaster();
 arpFilter.frequency.setValue(1500);
 
 function triggerArp(time) {
-  console.log('arp');
-  var n = midiToFreq( root + scale [arpStep % scale.length] );
+  //console.log('arp');
+  var n = midiToFreq(root + scale[arpStep % scale.length]);
   arp.triggerAttack(n, time, data.triangleAlpha);
-  arp.triggerRelease(n, time + arp.toSeconds('16n') );
+  arp.triggerRelease(n, time + arp.toSeconds('16n'));
 
-  switch(direction) {
-    case 0:
-      arpStep++;
-      break;
-    case 1:
-      arpStep--;
-      break;
+  switch (direction) {
+  case 0:
+    arpStep++;
+    break;
+  case 1:
+    arpStep--;
+    break;
   }
   if (arpStep >= data.triangleNumber) {
     arpStep = 0;
   } else if (arpStep < 0) {
     arpStep = data.triangleNumber;
   }
+
+  lightUpTriangle(arpStep, arp.toSeconds('16n'));
 }
 
 var bass = new Tone.MonoSynth();
@@ -136,7 +137,7 @@ var bassIsOn = false;
 function triggerBass(time) {
   var offset = -24;
   var bassQ = map(data.totalDist, 0, maxDistance, 5, 8);
-  if (data.avgX < width/3) {
+  if (data.avgX < width / 3) {
     offset = 24;
     bass.filterEnvelope.setMax(2000);
     bass.filter.Q.setValue(bassQ - 4);
@@ -153,13 +154,11 @@ function triggerBass(time) {
       bass.triggerEnvelopeAttack(time);
       bassIsOn = true;
     }
-  }
-  else {
+  } else {
     bass.triggerRelease(time);
     bassIsOn = false;
   }
 }
-
 
 midiToFreq = function (m) {
   return 440 * Math.pow(2, (m - 69) / 12.0);

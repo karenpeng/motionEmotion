@@ -9,6 +9,7 @@ var data = new Data();
 var timer = 0;
 var startCounting = false;
 var maxThreshold = 18;
+var frameRate = 30;
 
 function freezeCallback() {
   //console.log("freeze!");
@@ -18,7 +19,24 @@ function setup() {
   detectPoints.init();
 }
 
+function lightUpTriangle(triangleNumber, fadeTime) {
+  if (drawPoints.myTriangles && typeof (drawPoints.myTriangles[triangleNumber]) !==
+    'undefined') {
+    drawPoints.myTriangles[triangleNumber].lightnessOffset = 50;
+    drawPoints.myTriangles[triangleNumber].lightnessDecay = 50 / (fadeTime *
+      frameRate);
+  }
+}
+
+//var lastLoop = new Date();
+
+//var frameRate = document.getElementById("fps");
+
 function update() {
+  // var thisLoop = new Date();
+  // var fps = 1000 / (thisloop - lastLoop);
+  // lastLoop = thisLoop;
+  // frameRate.innerHTML = fps.toString();
 
   detectPoints.draw();
 
@@ -61,29 +79,31 @@ function update() {
   //console.log(data.triangleAlpha);
 
   data.getTriangleNum(drawPoints.myTriangles.length);
-  //console.log(data.triangleNumber);
 
   data.getAvg();
   data.getTotalDist();
 
+  if (typeof (emoLoop) !== 'undefined' && drawPoints.myTriangles.length <= 1) {
+    emoLoop();
+  }
+
 }
 
 function loop(callback) {
-  requestAnimationFrame(function () {
-    loop(callback);
-  });
+  setTimeout(function () {
+    requestAnimationFrame(function () {
+      loop(callback);
+    });
+    callback();
+  }, 1000 / frameRate);
+
+  // }, frameRate);
   // if (vid) {
   //   var context = myCanvas.getContext('2d');
   //   context.clearRect(0,0,myCanvas.width,myCanvas.height);
   //   context.drawImage(vid,0,0,myCanvas.width,myCanvas.height);
   //   context.putImageData(grayscale(context.getImageData(0,0,myCanvas.width,myCanvas.height)),0,0);
   // }
-
-  callback();
-
-  if (typeof (emoLoop) !== 'undefined') {
-    emoLoop();
-  }
 
 }
 

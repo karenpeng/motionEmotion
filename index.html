@@ -36,6 +36,11 @@
         left: 50%;
         margin-left: -40px;
       }
+      #fps{
+        position: absolute;
+        color: green;
+        background-color: black;
+      }
     </style>
   </head>
   <body>
@@ -44,6 +49,7 @@
       <canvas id="myCanvas" width="1280px" height="960px"></canvas>
       <canvas id="debugCanvas" width="80px" height="60px"></canvas>
       <video muted autoplay width="640px" height="480px"></video>
+      <div id="fps"></div>
   </body>
   <script type="text/javascript" src="lib/camera.js"></script>
   <script type="text/javascript" src="lib/delaunay.js"></script>
