@@ -83,7 +83,6 @@ function playNewEmoSound(time) {
 }
 
 
-
 Tone.Transport.loop = true;
 Tone.Transport.setLoopStart('0:0');
 Tone.Transport.setLoopEnd('2:0');
@@ -105,6 +104,7 @@ arpFilter.toMaster();
 arpFilter.frequency.setValue(1500);
 
 function triggerArp(time) {
+  console.log('arp');
   var n = midiToFreq( root + scale [arpStep % scale.length] );
   arp.triggerAttack(n, time, data.triangleAlpha);
   arp.triggerRelease(n, time + arp.toSeconds('16n') );
@@ -134,12 +134,19 @@ bass.envelope.release = 3;
 var bassIsOn = false;
 
 function triggerBass(time) {
-  if (data.triangleAlpha > 0.5) {
-    var bassQ = map(data.totalDist, 0, maxDistance, 5, 8);
+  var offset = -24;
+  var bassQ = map(data.totalDist, 0, maxDistance, 5, 8);
+  if (data.avgX < width/3) {
+    offset = 24;
+    bass.filterEnvelope.setMax(2000);
+    bass.filter.Q.setValue(bassQ - 4);
+  } else {
     bass.filterEnvelope.setMax(data.totalDist + 200);
     bass.filter.Q.setValue(bassQ);
+  }
+  if (data.triangleAlpha > 0.5) {
     var pitchPos = Math.floor(map(data.avgY, 0, height, scale.length, 0));
-    var midiPitch = root - 24 + scale[pitchPos];
+    var midiPitch = root + offset + scale[pitchPos];
     var freq = midiToFreq(midiPitch);
     bass.frequency.exponentialRampToValueNow(freq, '64n');
     if (!bassIsOn) {
