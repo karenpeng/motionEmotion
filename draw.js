@@ -10,7 +10,8 @@
     this.lightUp = false;
   }
   MyTriangle.prototype.update = function () {
-    this.alpha *=  Math.max(Math.min(map(data.triangleNumber, 0, 10, 0.9, 0.99), 0.995), 0.85); //0.99 data.triangleNumber;
+    this.alpha *= Math.max(Math.min(map(data.triangleNumber, 0, 10, 0.9, 0.99),
+      0.995), 0.85); //0.99 data.triangleNumber;
     // this.alpha = a
     return this.alpha > 0;
   };
@@ -26,13 +27,13 @@
         this.lightness.toString() +
         "%" + ")";
     }
-    ctx.strokeStyle = ctx.fillStyle;
+    //ctx.strokeStyle = ctx.fillStyle;
     ctx.beginPath();
     ctx.moveTo(this.a[0], this.a[1]);
     ctx.lineTo(this.b[0], this.b[1]);
     ctx.lineTo(this.c[0], this.c[1]);
     ctx.closePath();
-    ctx.stroke();
+    //ctx.stroke();
     ctx.fill();
   };
 

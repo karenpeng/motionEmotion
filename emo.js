@@ -1,7 +1,9 @@
 // thank you Audun Mathias Øygard for clmtrackr!
 // http://auduno.github.io/clmtrackr/examples/clm_emotiondetection.html
 
-var ctrack = new clm.tracker({useWebGL : true});
+var ctrack = new clm.tracker({
+  useWebGL: true
+});
 
 ctrack.init(pModel);
 

@@ -11,7 +11,7 @@ var startCounting = false;
 var maxThreshold = 18;
 
 function freezeCallback() {
-
+  //console.log("freeze!");
 }
 
 function setup() {
@@ -23,14 +23,10 @@ function update() {
   detectPoints.draw();
 
   if (detectPoints.points.length < maxThreshold) {
-    if (detectPoints.points.length < 3) {
-      //console.log("no movement :(");
-      //timer++;
-    } else {
+    if (detectPoints.points.length < 3) {} else {
       drawPoints.updatePoints(detectPoints.points, detectPoints.width,
         detectPoints.height);
       drawPoints.makeTriangle();
-      //timer = 0;
     }
   }
 
@@ -85,11 +81,14 @@ function loop(callback) {
 
   callback();
 
-  if (typeof(emoLoop) !== 'undefined'){
+  if (typeof (emoLoop) !== 'undefined') {
     emoLoop();
   }
 
 }
 
 setup();
+setTimeout(function () {
+  //do nothing;
+}, 1000);
 loop(update);
