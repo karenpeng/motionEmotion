@@ -11,6 +11,13 @@ var startCounting = false;
 var maxThreshold = 18;
 var frameRate = 30;
 
+var globalEmotion = null;
+var lastGlobalEmotion = null;
+var startCountingEmoji = false;
+var emojiTimer = 0;
+
+var emoji = document.getElementById("emoji");
+
 function freezeCallback() {
   //console.log("freeze!");
 }
@@ -26,6 +33,10 @@ function lightUpTriangle(triangleNumber, fadeTime) {
     drawPoints.myTriangles[triangleNumber].lightnessDecay = 50 / (fadeTime *
       frameRate);
   }
+}
+
+function EmotionizeTriangle(emotion) {
+  globalEmotion = emotion;
 }
 
 //var lastLoop = new Date();
@@ -44,7 +55,7 @@ function update() {
     if (detectPoints.points.length < 3) {} else {
       drawPoints.updatePoints(detectPoints.points, detectPoints.width,
         detectPoints.height);
-      drawPoints.makeTriangle();
+      drawPoints.makeTriangle(globalEmotion);
     }
   }
 
@@ -64,6 +75,37 @@ function update() {
 
   if (timer === 1) {
     freezeCallback();
+  }
+
+  if (lastGlobalEmotion !== globalEmotion) {
+    switch (globalEmotion) {
+    case 'happy':
+      emoji.innerHTML = '<img src="img/happy.png" width="100">';
+      break;
+    case 'sad':
+      emoji.innerHTML = '<img src="img/sad.png" width="100">';
+      break;
+    case 'surprised':
+      emoji.innerHTML = '<img src="img/surprise.png" width="100">';
+      break;
+    case 'angry':
+      emoji.innerHTML = '<img src="img/angry.png" width="100">';
+      break;
+    default:
+      emoji.innerHTML = null;
+    }
+    lastGlobalEmotion = globalEmotion;
+    startCountingEmoji = true;
+  }
+
+  if (startCountingEmoji) {
+    emojiTimer++;
+  }
+
+  if (emojiTimer > 30) {
+    emoji.innerHTML = null;
+    startCountingEmoji = false;
+    emojiTimer = 0;
   }
 
   data.getPoints(drawPoints.vertices);
@@ -96,15 +138,6 @@ function loop(callback) {
     });
     callback();
   }, 1000 / frameRate);
-
-  // }, frameRate);
-  // if (vid) {
-  //   var context = myCanvas.getContext('2d');
-  //   context.clearRect(0,0,myCanvas.width,myCanvas.height);
-  //   context.drawImage(vid,0,0,myCanvas.width,myCanvas.height);
-  //   context.putImageData(grayscale(context.getImageData(0,0,myCanvas.width,myCanvas.height)),0,0);
-  // }
-
 }
 
 setup();

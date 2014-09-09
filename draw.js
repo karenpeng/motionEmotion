@@ -5,13 +5,14 @@
     this.b = b;
     this.c = c;
     this.hue = Math.floor(Math.random() * 360);
+    this.saturation = Math.floor(Math.random() * 50 + 50);
     this.lightnessOffset = 0;
     this.lightnessDecay = 0;
     this.alpha = 0.8;
     this.lightUp = false;
   }
   MyTriangle.prototype.update = function () {
-    this.alpha *= map(data.pointNumber, 3, 18, 0.9, 0.99); //0.99 data.triangleNumber;
+    this.alpha *= map(data.pointNumber, 0, 18, 0.9, 0.99); //0.99 data.triangleNumber;
     // this.alpha = a
     this.lightnessOffset -= this.lightnessDecay;
     this.lightness = this.lightnessOffset + 50;
@@ -51,15 +52,34 @@
     }
   };
 
-  DrawPoints.prototype.makeTriangle = function () {
+  DrawPoints.prototype.makeTriangle = function (emotion) {
     this.triangles = Delaunay.triangulate(this.vertices);
     this.myTriangles = [];
+    var index = 0;
     for (var i = this.triangles.length; i >= 3; i -= 3) {
       this.myTriangles.push(new MyTriangle(
         this.vertices[this.triangles[i - 1]],
         this.vertices[this.triangles[i - 2]],
         this.vertices[this.triangles[i - 3]]
       ));
+      var t = this.myTriangles[index];
+      switch (emotion) {
+      case 'angry':
+        t.hue = Math.floor(Math.random() * 60);
+        break;
+      case 'sad':
+        t.hue = Math.floor(Math.random() * 80 + 200);
+        t.saturation = Math.floor(Math.random() * 50 + 10);
+        break;
+      case 'surprise':
+        t.hue = Math.floor(Math.random() * 100 + 260);
+        t.saturation = Math.floor(Math.random() * 50 + 10);
+        break;
+      default:
+        t.hue = Math.floor(Math.random() * 360);
+        t.saturation = Math.floor(Math.random() * 50 + 50);
+      }
+      index++;
     }
   };
 

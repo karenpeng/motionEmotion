@@ -16,12 +16,13 @@ var emotionData = ec.getBlank();
 
 var currentEmo;
 var prevEmo;
+var maxEmo = null;
 
 // called by animation loop
 function emoLoop() {
   var cp = ctrack.getCurrentParameters();
   var er = ec.meanPredict(cp);
-  var maxEmo = null;
+  // var maxEmo = null;
   var maxVal = 0.7;
   for (var i in er) {
     if (er[i].value > maxVal) {
@@ -31,6 +32,7 @@ function emoLoop() {
   }
   if (maxEmo !== prevEmo) {
     setNewEmo(maxEmo);
+    EmotionizeTriangle(maxEmo);
     currentEmo = maxEmo;
     prevEmo = maxEmo;
   }

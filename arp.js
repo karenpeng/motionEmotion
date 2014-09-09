@@ -18,32 +18,39 @@ var direction = 0;
  */
 function setNewEmo(emotion) {
   direction = Math.floor(Math.random() * 2);
-  console.log(emotion);
+  console.log(emotion)
+  var emoji = document.getElementById("emoji");
   switch (emotion) {
   case 'happy':
     emoSound = agogoLow;
     Tone.Transport.setBpm(100);
     root = 48;
     scale = pentatonic;
+    emoji.innerHTML = '<img src="img/happy.png" width="100">';
     break;
   case 'sad':
     emoSound = kick;
     Tone.Transport.setBpm(50);
     root = 45;
     scale = sus;
+    emoji.innerHTML = '<img src="img/sad.png" width="100">';
     break;
   case 'surprised':
     emoSound = agogoHigh;
     Tone.Transport.setBpm(150);
     root = 52;
     scale = sus;
+    emoji.innerHTML = '<img src="img/surprise.png" width="100">';
     break;
   case 'angry':
     emoSound = hh;
     Tone.Transport.setBpm(66.69);
     root = 46;
     scale = minSev;
+    emoji.innerHTML = '<img src="img/angry.png" width="100">';
     break;
+  default:
+    emoji.innerHTML = null;
   }
   Tone.Transport.setTimeout(function (time) {
     playNewEmoSound(time);
