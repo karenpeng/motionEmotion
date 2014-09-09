@@ -5,7 +5,7 @@
     this.b = b;
     this.c = c;
     this.hue = Math.floor(Math.random() * 360);
-    this.saturation = Math.floor(Math.random() * 50 + 50);
+    this.saturation = Math.floor(Math.random() * 50);
     this.lightnessOffset = 0;
     this.lightnessDecay = 0;
     this.alpha = 0.8;
@@ -66,18 +66,18 @@
       switch (emotion) {
       case 'angry':
         t.hue = Math.floor(Math.random() * 60);
+        t.saturation = Math.floor(Math.random() * 50 + 50);
         break;
       case 'sad':
         t.hue = Math.floor(Math.random() * 80 + 200);
-        t.saturation = Math.floor(Math.random() * 50 + 10);
         break;
       case 'surprise':
-        t.hue = Math.floor(Math.random() * 100 + 260);
-        t.saturation = Math.floor(Math.random() * 50 + 10);
+        t.hue = Math.floor(Math.random() * 80 + 280);
+        t.saturation = Math.floor(Math.random() * 50 + 50);
         break;
       default:
         t.hue = Math.floor(Math.random() * 360);
-        t.saturation = Math.floor(Math.random() * 50 + 50);
+        t.saturation = Math.floor(Math.random() * 50);
       }
       index++;
     }

@@ -60,36 +60,36 @@ function update() {
   }
 
   drawPoints.draw();
-  if (drawPoints.myTriangles.length > 0) {
-    if (drawPoints.myTriangles[0].alpha < 0.64) {
-      startCounting = true;
-    } else {
-      startCounting = false;
-      timer = 0;
-    }
-  }
+  // if (drawPoints.myTriangles.length > 0) {
+  //   if (drawPoints.myTriangles[0].alpha < 0.64) {
+  //     startCounting = true;
+  //   } else {
+  //     startCounting = false;
+  //     timer = 0;
+  //   }
+  // }
 
-  if (startCounting) {
-    timer++;
-  }
+  // if (startCounting) {
+  //   timer++;
+  // }
 
-  if (timer === 1) {
-    freezeCallback();
-  }
+  // if (timer === 1) {
+  //   freezeCallback();
+  // }
 
   if (lastGlobalEmotion !== globalEmotion) {
     switch (globalEmotion) {
     case 'happy':
-      emoji.innerHTML = '<img src="img/happy.png" width="100">';
+      emoji.innerHTML = '<img src="img/happy.png" width="60">';
       break;
     case 'sad':
-      emoji.innerHTML = '<img src="img/sad.png" width="100">';
+      emoji.innerHTML = '<img src="img/sad.png" width="60">';
       break;
     case 'surprised':
-      emoji.innerHTML = '<img src="img/surprise.png" width="100">';
+      emoji.innerHTML = '<img src="img/surprise.png" width="60">';
       break;
     case 'angry':
-      emoji.innerHTML = '<img src="img/angry.png" width="100">';
+      emoji.innerHTML = '<img src="img/angry.png" width="60">';
       break;
     default:
       emoji.innerHTML = null;
@@ -102,7 +102,7 @@ function update() {
     emojiTimer++;
   }
 
-  if (emojiTimer > 24) {
+  if (emojiTimer > 20) {
     emoji.innerHTML = null;
     startCountingEmoji = false;
     emojiTimer = 0;
