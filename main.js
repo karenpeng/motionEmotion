@@ -102,7 +102,7 @@ function update() {
     emojiTimer++;
   }
 
-  if (emojiTimer > 30) {
+  if (emojiTimer > 24) {
     emoji.innerHTML = null;
     startCountingEmoji = false;
     emojiTimer = 0;
