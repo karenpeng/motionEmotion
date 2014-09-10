@@ -14,8 +14,12 @@ var sus = [0, 5, 7, 12, 17, 19, 24, 29, 31];
 var minSev = [0, 3, 7, 10, 12, 15, 19, 22];
 var direction = 0;
 
-var arpActive = false;
-var bassActive = false;
+/*
+  Set these to false initially if you want to wait for an emotion
+  before playing sound.
+ */
+var arpActive = true;
+var bassActive = true;
 
 /*
   Play a sound when we have a new emotion

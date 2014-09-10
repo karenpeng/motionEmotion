@@ -20,7 +20,6 @@ var maxEmo = null;
 
 // called by animation loop
 function emoLoop() {
-  console.log('looping');
   var cp = ctrack.getCurrentParameters();
   var er = ec.meanPredict(cp);
   var maxEmo = null;
