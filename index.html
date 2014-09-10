@@ -26,7 +26,7 @@
       }
       #myCanvas{
         position: absolute;
-        z-index: 1;
+        z-index: 0;
         left: 50%;
         top: 50%;
         margin-left: -640px;
@@ -34,16 +34,11 @@
       }
       #debugCanvas{
         position: absolute;
-        z-index: 0;
+        z-index: -1;
         left: 50%;
         top: 50%;
         margin-top: -30px;
         margin-left: -40px;
-      }
-      #fps{
-        position: absolute;
-        color: green;
-        background-color: black;
       }
       #emoji{
         position:absolute;
@@ -75,22 +70,20 @@
           100% {left:0px; top:0px;}
       }
 </style>
-</head>
-      }
-    </style>
   </head>
   <body>
     <div id='container'>
       <canvas id="bgCangas"></canvas>
       <canvas id="myCanvas" width="1280px" height="960px"></canvas>
       <canvas id="debugCanvas" width="80px" height="60px"></canvas>
-      <video muted autoplay width="640px" height="480px"></video>
+      <video muted autoplay width="160px" height="120px"></video>
       <div id="fps"></div>
       <div id="emoji"></div>
   </body>
   <script type="text/javascript" src="lib/camera.js"></script>
-  <script type="text/javascript" src="lib/delaunay.js"></script>
   <script type="text/javascript" src="change_detection.js"></script>
+  <script type="text/javascript" src="lib/delaunay.js"></script>
+  <script type="text/javascript" src="map.js"></script>
   <script type="text/javascript" src="draw.js"></script>
   <script type="text/javascript" src="calculate.js"></script>
   <!-- js file from facial library-->
@@ -98,13 +91,12 @@
     <script src="lib/clmtrackr.min.js"></script>
     <script src="lib/model_pca_20_svm_emotionDetection.js"></script>
     <script src="lib/Stats.js"></script>
-    <script src="lib/d3.min.js"></script>
     <script src="lib/emotion_classifier.js"></script>
     <script src="lib/emotionmodel.js"></script>
   <!-- end -->
   <script type="text/javascript" src="lib/Tone.js"></script>
-  <script type="text/javascript" src="emo.js"></script>
   <script type="text/javascript" src="arp.js"></script>
+  <script type="text/javascript" src="emo.js"></script>
 
   <script type="text/javascript" src="main.js"></script>
 
