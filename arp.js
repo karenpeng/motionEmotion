@@ -9,38 +9,62 @@ var scale = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21, 24, 26, 28, 31, 33, 36];
 var pentatonic = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21, 24, 26, 28, 31, 33, 36];
 var major = [0, 4, 7, 12, 16, 19, 24, 28, 31];
 var minor = [0, 3, 7, 12, 15, 19, 24, 27, 31];
+var harMinor = [0, 2, 3, 5, 7, 8, 11, 12, 14, 15, 17, 19, 20, 23, 24];
 var sus = [0, 5, 7, 12, 17, 19, 24, 29, 31];
 var minSev = [0, 3, 7, 10, 12, 15, 19, 22];
 var direction = 0;
 
 /*
+  Set these to false initially if you want to wait for an emotion
+  before playing sound.
+ */
+var arpActive = true;
+var bassActive = true;
+
+/*
   Play a sound when we have a new emotion
  */
 function setNewEmo(emotion) {
+  if (emotion !== null) {
+    arpActive = true;
+    bassActive = true;
+  }
   direction = Math.floor(Math.random() * 2);
   console.log(emotion);
   switch (emotion) {
   case 'happy':
     emoSound = agogoLow;
     Tone.Transport.setBpm(100);
+    bass.setPreset('Pizz');
     root = 48;
     scale = pentatonic;
+    bass.filterEnvelope.setMax(700);
+    bass.filter.Q.setValue(7);
     break;
   case 'sad':
     emoSound = kick;
+    bass.setPreset('Bassy');
     Tone.Transport.setBpm(50);
+    bass.filterEnvelope.setMax(700);
+    bass.filter.Q.setValue(7);
     root = 45;
     scale = sus;
     break;
   case 'surprised':
     emoSound = agogoHigh;
+    bass.setPreset('BrassCircuit');
     Tone.Transport.setBpm(150);
+    bass.filterEnvelope.setMax(700);
+    bass.filter.Q.setValue(7);
     root = 52;
     scale = sus;
     break;
   case 'angry':
     emoSound = hh;
+    bass.setPreset('Barky');
     Tone.Transport.setBpm(66.69);
+    bass.filterEnvelope.setMax(2000);
+    bass.filter.Q.setValue(10);
     root = 46;
     scale = minSev;
     break;
@@ -103,26 +127,27 @@ arpFilter.toMaster();
 arpFilter.frequency.setValue(1500);
 
 function triggerArp(time) {
-  //console.log('arp');
-  var n = midiToFreq(root + scale[arpStep % scale.length]);
-  arp.triggerAttack(n, time, data.triangleAlpha);
-  arp.triggerRelease(n, time + arp.toSeconds('16n'));
+  if (arpActive){
+    var n = midiToFreq(root + scale[arpStep % scale.length]);
+    arp.triggerAttack(n, time, data.triangleAlpha);
+    arp.triggerRelease(n, time + arp.toSeconds('16n'));
 
-  switch (direction) {
-  case 0:
-    arpStep++;
-    break;
-  case 1:
-    arpStep--;
-    break;
-  }
-  if (arpStep >= data.triangleNumber) {
-    arpStep = 0;
-  } else if (arpStep < 0) {
-    arpStep = data.triangleNumber;
-  }
+    switch (direction) {
+    case 0:
+      arpStep++;
+      break;
+    case 1:
+      arpStep--;
+      break;
+    }
+    if (arpStep >= data.triangleNumber) {
+      arpStep = 0;
+    } else if (arpStep < 0) {
+      arpStep = data.triangleNumber;
+    }
 
-  lightUpTriangle(arpStep, arp.toSeconds('16n'));
+    lightUpTriangle(arpStep, arp.toSeconds('16n'));
+  }
 }
 
 var bass = new Tone.MonoSynth();
@@ -135,28 +160,30 @@ bass.envelope.release = 3;
 var bassIsOn = false;
 
 function triggerBass(time) {
-  var offset = -24;
-  var bassQ = map(data.totalDist, 0, maxDistance, 5, 8);
-  if (data.avgX < width / 3) {
-    offset = 24;
-    bass.filterEnvelope.setMax(2000);
-    bass.filter.Q.setValue(bassQ - 4);
-  } else {
-    bass.filterEnvelope.setMax(data.totalDist + 200);
-    bass.filter.Q.setValue(bassQ);
-  }
-  if (data.triangleAlpha > 0.5) {
-    var pitchPos = Math.floor(map(data.avgY, 0, height, scale.length, 0));
-    var midiPitch = root + offset + scale[pitchPos];
-    var freq = midiToFreq(midiPitch);
-    bass.frequency.exponentialRampToValueNow(freq, '64n');
-    if (!bassIsOn) {
-      bass.triggerEnvelopeAttack(time);
-      bassIsOn = true;
+  if (bassActive) {
+    var offset = -24;
+    var bassQ = map(data.totalDist, 0, maxDistance, 5, 8);
+    if (data.avgX < width / 3) {
+      offset = 24;
+      bass.filterEnvelope.setMax(2000);
+      bass.filter.Q.setValue(bassQ - 4);
+    } else {
+      bass.filterEnvelope.setMax(data.totalDist + 200);
+      bass.filter.Q.setValue(bassQ);
     }
-  } else {
-    bass.triggerRelease(time);
-    bassIsOn = false;
+    if (data.triangleAlpha > 0.5) {
+      var pitchPos = Math.floor(map(data.avgY, 0, height, scale.length, 0));
+      var midiPitch = root + offset + scale[pitchPos];
+      var freq = midiToFreq(midiPitch);
+      bass.frequency.exponentialRampToValueNow(freq, '64n');
+      if (!bassIsOn) {
+        bass.triggerEnvelopeAttack(time);
+        bassIsOn = true;
+      }
+    } else {
+      bass.triggerRelease(time);
+      bassIsOn = false;
+    }
   }
 }
 
@@ -168,9 +195,4 @@ function map(para, orMin, orMax, tarMin, tarMax) {
   var ratio = (para - orMin) / (orMax - orMin);
   var tarValue = ratio * (tarMax - tarMin) + tarMin;
   return tarValue;
-}
-
-function freezeCallback() {
-  // update number of steps in the arp
-  // arp from previous freeze
 }

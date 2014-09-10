@@ -22,8 +22,8 @@ var maxEmo = null;
 function emoLoop() {
   var cp = ctrack.getCurrentParameters();
   var er = ec.meanPredict(cp);
-  // var maxEmo = null;
-  var maxVal = 0.7;
+  var maxEmo = null;
+  var maxVal = 0.3;
   for (var i in er) {
     if (er[i].value > maxVal) {
       maxEmo = er[i].emotion;

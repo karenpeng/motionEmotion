@@ -92,16 +92,17 @@
     }
     this.ctx.restore();
 
-    if (this.myTriangles.length > 0) {
-      for (var l = 0; l < this.myTriangles.length; l++) {
-        if (!this.myTriangles[l].update()) {
-          this.myTriangles.splice(l, 1);
-        } else {
-          this.myTriangles[l].render(this.ctx);
+    if (bassActive) {
+      if (this.myTriangles.length > 0) {
+        for (var l = 0; l < this.myTriangles.length; l++) {
+          if (!this.myTriangles[l].update()) {
+            this.myTriangles.splice(l, 1);
+          } else {
+            this.myTriangles[l].render(this.ctx);
+          }
         }
       }
     }
-
   };
 
   exports.DrawPoints = DrawPoints;
