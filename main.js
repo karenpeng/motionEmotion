@@ -125,7 +125,7 @@ function update() {
   data.getAvg();
   data.getTotalDist();
 
-  if (typeof (emoLoop) !== 'undefined' && drawPoints.myTriangles.length <= 1) {
+  if (typeof (emoLoop) !== 'undefined' && drawPoints.myTriangles.length <= 1 || data.triangleAlpha < 0.05) {
     emoLoop();
   }
 

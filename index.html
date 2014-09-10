@@ -51,9 +51,31 @@
         width: 60px;
         top: 50%;
         left: 50%;
-        margin-top: -30px;
-        margin-left: -30px;
+        margin-top: 400px;
+        margin-left: 400px;
         z-index: 2;
+        -webkit-animation: myfirst 5s linear 2s infinite alternate; /* Chrome, Safari, Opera */
+        animation: myfirst 5s linear 2s infinite alternate;
+      }
+      /* Chrome, Safari, Opera */
+      @-webkit-keyframes myfirst {
+          0%   {left:0px; top:0px;}
+          25%  {left:200px; top:0px;}
+          50%  {left:200px; top:200px;}
+          75%  {left:0px; top:200px;}
+          100% {left:0px; top:0px;}
+      }
+
+      /* Standard syntax */
+      @keyframes myfirst {
+          0%   {left:0px; top:0px;}
+          25%  {left:200px; top:0px;}
+          50%  {left:200px; top:200px;}
+          75%  {left:0px; top:200px;}
+          100% {left:0px; top:0px;}
+      }
+</style>
+</head>
       }
     </style>
   </head>
