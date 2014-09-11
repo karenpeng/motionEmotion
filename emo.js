@@ -32,7 +32,7 @@ function emoLoop() {
   }
   if (maxEmo !== prevEmo) {
     setNewEmo(maxEmo);
-    EmotionizeTriangle(maxEmo);
+    // EmotionizeTriangle(maxEmo);
     currentEmo = maxEmo;
     prevEmo = maxEmo;
   }
