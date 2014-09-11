@@ -1,39 +1,45 @@
 // thank you Audun Mathias Øygard for clmtrackr!
 // http://auduno.github.io/clmtrackr/examples/clm_emotiondetection.html
 
-var ctrack = new clm.tracker({
-  useWebGL: true
-});
+(function (exports) {
 
-ctrack.init(pModel);
+  function MyClmTracker() {
 
-var vid = document.getElementsByTagName('video')[0];
-ctrack.start(vid);
+  }
 
-var ec = new emotionClassifier();
-ec.init(emotionModel);
-var emotionData = ec.getBlank();
+  MyClmTracker.prototype.init = function () {
+    this.ctrack = new clm.tracker({
+      useWebGL: true
+    });
 
-var currentEmo;
-var prevEmo;
-var maxEmo = null;
+    this.ctrack.init(pModel);
 
-// called by animation loop
-function emoLoop() {
-  var cp = ctrack.getCurrentParameters();
-  var er = ec.meanPredict(cp);
-  var maxEmo = null;
-  var maxVal = 0.3;
-  for (var i in er) {
-    if (er[i].value > maxVal) {
-      maxEmo = er[i].emotion;
-      maxVal = er[i].value;
+    var vid = document.getElementsByTagName('video')[0];
+    this.ctrack.start(vid);
+
+    this.ec = new emotionClassifier();
+    this.ec.init(emotionModel);
+    //this.emotionData = this.ec.getBlank();
+
+    this.maxEmo = null;
+  };
+  // called by animation loop
+  MyClmTracker.prototype.update = function () {
+    var cp = this.ctrack.getCurrentParameters();
+    var er = this.ec.meanPredict(cp);
+    this.maxEmo = null;
+    var maxVal = 0.3;
+    if (er.length > 0) {
+      var that = this;
+      er.forEach(function (item) {
+        if (item.value > maxVal) {
+          that.maxEmo = item.emotion;
+          maxVal = item.value;
+        }
+      });
     }
-  }
-  if (maxEmo !== prevEmo) {
-    setNewEmo(maxEmo);
-    // EmotionizeTriangle(maxEmo);
-    currentEmo = maxEmo;
-    prevEmo = maxEmo;
-  }
-}
+  };
+
+  exports.MyClmTracker = MyClmTracker;
+
+})(this);

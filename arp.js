@@ -127,7 +127,7 @@ arpFilter.toMaster();
 arpFilter.frequency.setValue(1500);
 
 function triggerArp(time) {
-  if (arpActive){
+  if (arpActive) {
     var n = midiToFreq(root + scale[arpStep % scale.length]);
     arp.triggerAttack(n, time, data.triangleAlpha);
     arp.triggerRelease(n, time + arp.toSeconds('16n'));
@@ -190,9 +190,3 @@ function triggerBass(time) {
 midiToFreq = function (m) {
   return 440 * Math.pow(2, (m - 69) / 12.0);
 };
-
-function map(para, orMin, orMax, tarMin, tarMax) {
-  var ratio = (para - orMin) / (orMax - orMin);
-  var tarValue = ratio * (tarMax - tarMin) + tarMin;
-  return tarValue;
-}

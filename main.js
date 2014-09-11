@@ -6,24 +6,36 @@ var drawPoints = new DrawPoints(myCanvas);
 
 var data = new Data();
 
-var timer = 0;
-var startCounting = false;
-var maxThreshold = 18;
+var stats = new Stats();
+stats.setMode(0);
+// Align top-left
+stats.domElement.style.position = 'absolute';
+stats.domElement.style.left = '0px';
+stats.domElement.style.top = '0px';
+
+document.body.appendChild(stats.domElement);
+
+// var timer = 0;
+// var startCounting = false;
+var maxThreshold = 15;
 var frameRate = 30;
 
-var globalEmotion = null;
-var lastGlobalEmotion = null;
+var myEmotion = new MyClmTracker();
 var startCountingEmoji = false;
 var emojiTimer = 0;
 
 var emoji = document.getElementById("emoji");
 
+var preEmotion = null;
+var curEmotion = 'happy';
+
 function freezeCallback() {
-  //console.log("freeze!");
+  console.log("freeze!");
 }
 
 function setup() {
   detectPoints.init();
+  myEmotion.init();
 }
 
 function lightUpTriangle(triangleNumber, fadeTime) {
@@ -35,31 +47,18 @@ function lightUpTriangle(triangleNumber, fadeTime) {
   }
 }
 
-function EmotionizeTriangle(emotion) {
-  globalEmotion = emotion;
-}
-
-//var lastLoop = new Date();
-
-//var frameRate = document.getElementById("fps");
-
 function update() {
-  // var thisLoop = new Date();
-  // var fps = 1000 / (thisloop - lastLoop);
-  // lastLoop = thisLoop;
-  // frameRate.innerHTML = fps.toString();
-
   detectPoints.draw();
 
-  if (detectPoints.points.length < maxThreshold) {
-    if (detectPoints.points.length < 3) {} else {
-      drawPoints.updatePoints(detectPoints.points, detectPoints.width,
-        detectPoints.height);
-      drawPoints.makeTriangle(globalEmotion);
-    }
+  if (detectPoints.points.length >= 3 && detectPoints.points.length <
+    maxThreshold) {
+    drawPoints.updatePoints(detectPoints.points, detectPoints.width,
+      detectPoints.height);
+    drawPoints.makeTriangle(curEmotion);
   }
 
   drawPoints.draw();
+
   // if (drawPoints.myTriangles.length > 0) {
   //   if (drawPoints.myTriangles[0].alpha < 0.64) {
   //     startCounting = true;
@@ -76,37 +75,6 @@ function update() {
   // if (timer === 1) {
   //   freezeCallback();
   // }
-
-  if (lastGlobalEmotion !== globalEmotion) {
-    switch (globalEmotion) {
-    case 'happy':
-      emoji.innerHTML = '<img src="img/happy.png" width="60">';
-      break;
-    case 'sad':
-      emoji.innerHTML = '<img src="img/sad.png" width="60">';
-      break;
-    case 'surprised':
-      emoji.innerHTML = '<img src="img/surprise.png" width="60">';
-      break;
-    case 'angry':
-      emoji.innerHTML = '<img src="img/angry.png" width="60">';
-      break;
-    default:
-      emoji.innerHTML = null;
-    }
-    lastGlobalEmotion = globalEmotion;
-    startCountingEmoji = true;
-  }
-
-  if (startCountingEmoji) {
-    emojiTimer++;
-  }
-
-  if (emojiTimer > 20) {
-    emoji.innerHTML = null;
-    startCountingEmoji = false;
-    emojiTimer = 0;
-  }
 
   data.getPoints(drawPoints.vertices);
   //console.log(data.points);
@@ -125,10 +93,42 @@ function update() {
   data.getAvg();
   data.getTotalDist();
 
-  if (typeof (emoLoop) !== 'undefined' && drawPoints.myTriangles.length <= 1 || data.triangleAlpha < 0.05) {
-    emoLoop();
+  if (drawPoints.myTriangles.length <= 1 || data.triangleAlpha < 0.05) {
+    myEmotion.update();
+    curEmotion = myEmotion.maxEmo;
   }
 
+  if (preEmotion !== curEmotion) {
+    switch (curEmotion) {
+    case 'happy':
+      emoji.innerHTML = '<img src="img/happy.png" width="60">';
+      break;
+    case 'sad':
+      emoji.innerHTML = '<img src="img/sad.png" width="60">';
+      break;
+    case 'surprised':
+      emoji.innerHTML = '<img src="img/surprise.png" width="60">';
+      break;
+    case 'angry':
+      emoji.innerHTML = '<img src="img/angry.png" width="60">';
+      break;
+    default:
+      emoji.innerHTML = null;
+    }
+    setNewEmo(curEmotion);
+    preEmotion = curEmotion;
+    startCountingEmoji = true;
+  }
+
+  if (startCountingEmoji) {
+    emojiTimer++;
+  }
+
+  if (emojiTimer > 20) {
+    emoji.innerHTML = null;
+    startCountingEmoji = false;
+    emojiTimer = 0;
+  }
 }
 
 function loop(callback) {
@@ -136,12 +136,15 @@ function loop(callback) {
     requestAnimationFrame(function () {
       loop(callback);
     });
+    stats.begin();
     callback();
+    stats.end();
+
   }, 1000 / frameRate);
 }
 
 setup();
 setTimeout(function () {
   //do nothing;
-}, 1000);
+}, 200);
 loop(update);
