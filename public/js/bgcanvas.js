@@ -19,7 +19,7 @@
   };
 
   Tri.prototype.draw = function (ctx) {
-    ctx.strokeStyle = '#444';
+    ctx.strokeStyle = '#3f3f3f';
     ctx.beginPath();
     ctx.moveTo(this.a[0], this.a[1]);
     ctx.lineTo(this.b[0], this.b[1]);
