@@ -2,7 +2,7 @@
 
   function Tri(width, height) {
     this.a = [Math.random() * width, Math.random() * height];
-    this.b = [this.a[0] + Math.random() * 400 - 200, this.a[1] + Math.random() * 400 - 200];
+    this.b = [this.a[0] + Math.random() * 300 - 150, this.a[1] + Math.random() * 300 - 150];
     this.c = [this.a[0] + Math.random() * 200 - 100, this.a[1] + Math.random() * 200 - 100];
     this.av = [Math.random() * 0.6 - 0.3, Math.random() * 0.6 - 0.3];
     this.bv = [this.av[0] + Math.random() * 0.2 - 0.1, this.av[1] + Math.random() * 0.2 - 0.1];
@@ -34,7 +34,7 @@
     this.width = this.can.width;
     this.height = this.can.height;
     this.tris = [];
-    for (var i = 0; i < 30; i++) {
+    for (var i = 0; i < 36; i++) {
       this.tris.push(new Tri(this.width, this.height));
     }
   }
