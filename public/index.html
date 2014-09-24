@@ -6,7 +6,7 @@
         left: 0;
         margin: 0;
         padding: 0;
-        background-color: black;
+        background-color: #222;
       }
       video{
         display: none;
@@ -29,6 +29,7 @@
         z-index: 0;
         left: 50%;
         top: 50%;
+        background: rgba(30,30,30,0.6);
         /*
         margin-left: -640px;
         margin-top: -480px;
@@ -78,6 +79,7 @@
   </head>
   <body>
     <div id='container'>
+      <canvas id="bgCanvas"></canvas>
       <canvas id="myCanvas"></canvas>
       <canvas id="debugCanvas" width="80px" height="60px"></canvas>
       <video muted autoplay width="160px" height="120px"></video>

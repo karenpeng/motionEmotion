@@ -4,6 +4,11 @@ var myCanvas = document.getElementById("myCanvas");
 var detectPoints = new DetectPoints(debugCanvas);
 var drawPoints = new DrawPoints(myCanvas);
 
+if (bgActive) {
+  var bgCanvas = document.getElementById("bgCanvas");
+  var bgShapes = new BgShapes(bgCanvas);
+}
+
 var data = new Data();
 
 // var stats = new Stats();
@@ -48,6 +53,10 @@ function lightUpTriangle(triangleNumber, fadeTime) {
 }
 
 function update() {
+  if (bgShapes) {
+    bgShapes.update();
+    bgShapes.draw();
+  }
   detectPoints.draw();
 
   if (detectPoints.points.length >= 3 && detectPoints.points.length <
@@ -130,6 +139,12 @@ function update() {
     emojiTimer = 0;
   }
 }
+
+function resize() {
+  drawPoints.resize();
+}
+
+window.addEventListener('resize', resize, false);
 
 function loop(callback) {
   setTimeout(function () {

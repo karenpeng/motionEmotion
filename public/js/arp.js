@@ -30,7 +30,7 @@ function setNewEmo(emotion) {
     bassActive = true;
   }
   direction = Math.floor(Math.random() * 2);
-  console.log(emotion);
+  //console.log(emotion);
   switch (emotion) {
   case 'happy':
     emoSound = agogoLow;
