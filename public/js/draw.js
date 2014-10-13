@@ -43,6 +43,11 @@
     this.vertices = [];
   }
 
+  DrawPoints.prototype.resize = function(){
+    this.width = this.can.width;
+    this.height = this.can.height;
+  };
+
   DrawPoints.prototype.updatePoints = function (points, width, height) {
     this.widthRatio = this.width / width;
     this.heightRatio = this.height / height;

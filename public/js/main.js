@@ -4,16 +4,21 @@ var myCanvas = document.getElementById("myCanvas");
 var detectPoints = new DetectPoints(debugCanvas);
 var drawPoints = new DrawPoints(myCanvas);
 
+if (bgActive) {
+  var bgCanvas = document.getElementById("bgCanvas");
+  var bgShapes = new BgShapes(bgCanvas);
+}
+
 var data = new Data();
 
-var stats = new Stats();
-stats.setMode(0);
-// Align top-left
-stats.domElement.style.position = 'absolute';
-stats.domElement.style.left = '0px';
-stats.domElement.style.top = '0px';
+// var stats = new Stats();
+// stats.setMode(0);
+// // Align top-left
+// stats.domElement.style.position = 'absolute';
+// stats.domElement.style.left = '0px';
+// stats.domElement.style.top = '0px';
 
-document.body.appendChild(stats.domElement);
+// document.body.appendChild(stats.domElement);
 
 // var timer = 0;
 // var startCounting = false;
@@ -48,6 +53,10 @@ function lightUpTriangle(triangleNumber, fadeTime) {
 }
 
 function update() {
+  if (bgShapes) {
+    bgShapes.update();
+    bgShapes.draw();
+  }
   detectPoints.draw();
 
   if (detectPoints.points.length >= 3 && detectPoints.points.length <
@@ -131,14 +140,20 @@ function update() {
   }
 }
 
+function resize() {
+  drawPoints.resize();
+}
+
+window.addEventListener('resize', resize, false);
+
 function loop(callback) {
   setTimeout(function () {
     requestAnimationFrame(function () {
       loop(callback);
     });
-    stats.begin();
+    //stats.begin();
     callback();
-    stats.end();
+    //stats.end();
 
   }, 1000 / frameRate);
 }
