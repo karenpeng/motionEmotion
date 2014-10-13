@@ -120,9 +120,7 @@ define("Tone/core/Tone", [], function(){
 	///////////////////////////////////////////////////////////////////////////
 
 	/**
-	 *  Tone is the baseclass of all ToneNodes
-	 *  
-	 *  From Tone, children inherit timing and math which is used throughout Tone.js
+	 *  @class  Tone is the baseclass of all Tone Modules. 
 	 *  
 	 *  @constructor
 	 *  @alias Tone
@@ -148,6 +146,7 @@ define("Tone/core/Tone", [], function(){
 
 	/**
 	 *  A static pointer to the audio context
+	 *  @static
 	 *  @type {AudioContext}
 	 */
 	Tone.context = audioContext;
@@ -155,7 +154,6 @@ define("Tone/core/Tone", [], function(){
 	/**
 	 *  A static pointer to the audio context
 	 *  @type {AudioContext}
-	 *  @static
 	 */
 	Tone.prototype.context = Tone.context;
 
@@ -442,14 +440,14 @@ define("Tone/core/Tone", [], function(){
 	};
 
 	/**
-	 *  convert Tone.Time to seconds
+	 *  convert time to seconds
 	 *
 	 *  this is a simplified version which only handles numbers and 
 	 *  'now' relative numbers. If the Transport is included this 
 	 *  method is overridden to include many other features including 
 	 *  notationTime, Frequency, and transportTime
 	 *  
-	 *  @param  {Tone.Time} time 
+	 *  @param  {number=} time 
 	 *  @param {number=} now if passed in, this number will be 
 	 *                       used for all 'now' relative timings
 	 *  @return {number}   	seconds in the same timescale as the AudioContext
@@ -492,50 +490,6 @@ define("Tone/core/Tone", [], function(){
 	};
 
 	///////////////////////////////////////////////////////////////////////////
-	//	MUSIC NOTES
-	///////////////////////////////////////////////////////////////////////////
-
-	var noteToIndex = { "c" : 0, "c#" : 1, "db" : 1, "d" : 2, "d#" : 3, "eb" : 3, 
-		"e" : 4, "f" : 5, "f#" : 6, "gb" : 6, "g" : 7, "g#" : 8, "ab" : 8, 
-		"a" : 9, "a#" : 10, "bb" : 10, "b" : 11
-	};
-
-	var noteIndexToNote = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-
-	var middleC = 261.6255653005986;
-
-	/**
-	 *  convert a note name to frequency (i.e. A4 to 440)
-	 *  @param  {string} note
-	 *  @return {number}         
-	 */
-	Tone.prototype.noteToFrequency = function(note){
-		//break apart the note by frequency and octave
-		var parts = note.split(/(\d+)/);
-		if (parts.length === 3){
-			var index = noteToIndex[parts[0].toLowerCase()];
-			var octave = parts[1];
-			var noteNumber = index + parseInt(octave, 10) * 12;
-			return Math.pow(2, (noteNumber - 48) / 12) * middleC;
-		} else {
-			return 0;
-		}
-	};
-
-	/**
-	 *  convert a note name (i.e. A4, C#5, etc to a frequency)
-	 *  @param  {number} freq
-	 *  @return {string}         
-	 */
-	Tone.prototype.frequencyToNote = function(freq){
-		var log = Math.log(freq / middleC) / Math.LN2;
-		var noteNumber = Math.round(12 * log) + 48;
-		var octave = Math.floor(noteNumber/12);
-		var noteName = noteIndexToNote[noteNumber % 12];
-		return noteName + octave.toString();
-	};
-
-	///////////////////////////////////////////////////////////////////////////
 	//	STATIC METHODS
 	///////////////////////////////////////////////////////////////////////////
 
@@ -549,7 +503,7 @@ define("Tone/core/Tone", [], function(){
 	/**
 	 *  invoke this callback when a new context is added
 	 *  will be invoked initially with the first context
-	 *  @internal 
+	 *  @private 
 	 *  @static
 	 *  @param {function(AudioContext)} callback the callback to be invoked
 	 *                                           with the audio context
@@ -591,9 +545,9 @@ define("Tone/core/Tone", [], function(){
 		if (isUndef(parent)){
 			parent = Tone;
 		}
-		function tempConstructor(){}
-		tempConstructor.prototype = parent.prototype;
-		child.prototype = new tempConstructor();
+		function TempConstructor(){}
+		TempConstructor.prototype = parent.prototype;
+		child.prototype = new TempConstructor();
 		/** @override */
 		child.prototype.constructor = child;
 	};
@@ -623,7 +577,7 @@ define("Tone/core/Tone", [], function(){
 		_silentNode.connect(audioContext.destination);
 	});
 
-	console.log("Tone.js r1-dev");
+	console.log("Tone.js r2");
 
 	return Tone;
 });
@@ -742,7 +696,12 @@ define('Tone/signal/Signal',["Tone/core/Tone"], function(Tone){
 	 */
 	Tone.Signal.prototype.exponentialRampToValueAtTime = function(value, endTime){
 		value *= this._syncRatio;
-		this._scalar.gain.exponentialRampToValueAtTime(value, this.toSeconds(endTime));
+		try {
+			this._scalar.gain.exponentialRampToValueAtTime(value, this.toSeconds(endTime));
+		} catch(e){
+			//firefox won't let the signal ramp past 1, in these cases, revert to linear ramp
+			this._scalar.gain.linearRampToValueAtTime(value, this.toSeconds(endTime));
+		}
 	};
 
 	/**
@@ -755,12 +714,11 @@ define('Tone/signal/Signal',["Tone/core/Tone"], function(Tone){
 	Tone.Signal.prototype.exponentialRampToValueNow = function(value, endTime){
 		var now = this.now();
 		this.setCurrentValueNow(now);
-		value *= this._syncRatio;
 		//make sure that the endTime doesn't start with +
 		if (endTime.toString().charAt(0) === "+"){
 			endTime = endTime.substr(1);
 		}
-		this._scalar.gain.exponentialRampToValueAtTime(value, now + this.toSeconds(endTime));
+		this.exponentialRampToValueAtTime(value, now + this.toSeconds(endTime));
 	};
 
 	/**
@@ -871,10 +829,8 @@ define('Tone/signal/Signal',["Tone/core/Tone"], function(Tone){
 	 *  internal dispose method to tear down the node
 	 */
 	Tone.Signal.prototype.dispose = function(){
-		//disconnect everything
-		this.output.disconnect();
+		Tone.prototype.dispose.call(this);
 		this._scalar.disconnect();
-		this.output = null;
 		this._scalar = null;
 	};
 
@@ -938,687 +894,12 @@ define('Tone/signal/Signal',["Tone/core/Tone"], function(Tone){
 
 	return Tone.Signal;
 });
-define('Tone/signal/Add',["Tone/core/Tone", "Tone/signal/Signal"], function(Tone){
-
-	
-
-	/**
-	 *  @class Adds a value to an incoming signal
-	 *
-	 *  @constructor
-	 *  @extends {Tone}
-	 *  @param {number} value
-	 */
-	Tone.Add = function(value){
-		/**
-		 *  @private
-		 *  @type {Tone}
-		 */
-		this._value = new Tone.Signal(value);
-
-		/**
-		 *  @type {GainNode}
-		 */
-		this.input = this.output = this.context.createGain();
-
-		//connections
-		this._value.connect(this.output);
-	};
-
-	Tone.extend(Tone.Add);
-
-	/**
-	 *  set the constant
-	 *  
-	 *  @param {number} value 
-	 */
-	Tone.Add.prototype.setValue = function(value){
-		this._value.setValue(value);
-	}; 
-
-	/**
-	 *  borrows the method from {@link Tone.Signal}
-	 *  
-	 *  @function
-	 */
-	Tone.Add.prototype.connect = Tone.Signal.prototype.connect;
-
-	/**
-	 *  dispose method
-	 */
-	Tone.Add.prototype.dispose = function(){
-		this._value.dispose();
-		this.output.disconnect();
-		this._value = null;
-		this.output = null;
-	}; 
-
-	return Tone.Add;
-});
-define('Tone/signal/Multiply',["Tone/core/Tone", "Tone/signal/Signal"], function(Tone){
-
-	
-
-	/**
-	 *  @class  Multiply the incoming signal by some factor
-	 *
-	 *  @constructor
-	 *  @extends {Tone}
-	 *  @param {number=} value constant value to multiple
-	 */
-	Tone.Multiply = function(value){
-		/**
-		 *  the input node is the same as the output node
-		 *  it is also the GainNode which handles the scaling of incoming signal
-		 *  
-		 *  @type {GainNode}
-		 */
-		this.input = this.output = this.context.createGain();
-		
-		//apply the inital scale factor
-		this.input.gain.value = this.defaultArg(value, 1);
-	};
-
-	Tone.extend(Tone.Multiply);
-
-	/**
-	 *  set the constant multiple
-	 *  	
-	 *  @param {number} value 
-	 */
-	Tone.Multiply.prototype.setValue = function(value){
-		this.input.gain.value = value;
-	};
-
-	/**
-	 *  borrows the method from {@link Tone.Signal}
-	 *  
-	 *  @function
-	 */
-	Tone.Multiply.prototype.connect = Tone.Signal.prototype.connect;
-
-	/**
-	 *  clean up
-	 */
-	Tone.Multiply.prototype.dispose = function(){
-		this.input.disconnect();
-		this.input = null;
-	}; 
-
-	return Tone.Multiply;
-});
-
-define('Tone/signal/Scale',["Tone/core/Tone", "Tone/signal/Add", "Tone/signal/Multiply", "Tone/signal/Signal"], function(Tone){
-
-	
-	
-	/**
-	 *  @class  performs a linear scaling on an input signal.
-	 *          Scales from the input range of inputMin to inputMax 
-	 *          to the output range of outputMin to outputMax.
-	 *
-	 *  @description If only two arguments are provided, the inputMin and inputMax are set to -1 and 1
-	 *
-	 *  @constructor
-	 *  @extends {Tone}
-	 *  @param {number} inputMin  
-	 *  @param {number} inputMax  
-	 *  @param {number=} outputMin 
-	 *  @param {number=} outputMax 
-	 */
-	Tone.Scale = function(inputMin, inputMax, outputMin, outputMax){
-		Tone.call(this);
-
-		//if there are only two args
-		if (arguments.length == 2){
-			outputMin = inputMin;
-			outputMax = inputMax;
-			inputMin = -1;
-			inputMax = 1;
-		}
-
-		/** @private 
-			@type {number} */
-		this._inputMin = inputMin;
-		/** @private 
-			@type {number} */
-		this._inputMax = inputMax;
-		/** @private 
-			@type {number} */
-		this._outputMin = outputMin;
-		/** @private 
-			@type {number} */
-		this._outputMax = outputMax;
-
-
-		/** @private 
-			@type {Tone.Add} */
-		this._plusInput = new Tone.Add(0);
-		/** @private 
-			@type {Tone.Multiply} */
-		this._scale = new Tone.Multiply(1);
-		/** @private 
-			@type {Tone.Add} */
-		this._plusOutput = new Tone.Add(0);
-
-		//connections
-		this.chain(this.input, this._plusInput, this._scale, this._plusOutput, this.output);
-
-		//set the scaling values
-		this._setScalingParameters();
-	};
-
-	Tone.extend(Tone.Scale);
-
-	/**
-	 *  set the scaling parameters
-	 *  
-	 *  @private
-	 */
-	Tone.Scale.prototype._setScalingParameters = function(){
-		//components
-		this._plusInput.setValue(-this._inputMin);
-		this._scale.setValue((this._outputMax - this._outputMin)/(this._inputMax - this._inputMin));
-		this._plusOutput.setValue(this._outputMin);
-	};
-
-	/**
-	 *  set the input min value
-	 *  @param {number} val 
-	 */
-	Tone.Scale.prototype.setInputMin = function(val){
-		this._inputMin = val;
-		this._setScalingParameters();
-	};
-
-	/**
-	 *  set the input max value
-	 *  @param {number} val 
-	 */
-	Tone.Scale.prototype.setInputMax = function(val){
-		this._inputMax = val;
-		this._setScalingParameters();
-	};
-
-	/**
-	 *  set the output min value
-	 *  @param {number} val 
-	 */
-	Tone.Scale.prototype.setOutputMin = function(val){
-		this._outputMin = val;
-		this._setScalingParameters();
-	};
-
-	/**
-	 *  set the output max value
-	 *  @param {number} val 
-	 */
-	Tone.Scale.prototype.setOutputMax = function(val){
-		this._outputMax = val;
-		this._setScalingParameters();
-	};
-
-	/**
-	 *  borrows connect from {@link Tone.Signal}
-	 *  
-	 *  @function
-	 */
-	Tone.Scale.prototype.connect = Tone.Signal.prototype.connect;
-
-	/**
-	 *  clean up
-	 */
-	Tone.Scale.prototype.dispose = function(){
-		this.input.disconnect();
-		this.output.disconnect();
-		this._plusInput.dispose();
-		this._plusOutput.dispose();
-		this._scale.dispose();
-		this.input = null;
-		this.output = null;
-		this._plusInput = null;
-		this._plusOutput = null;
-		this._scale = null;
-	}; 
-
-
-	return Tone.Scale;
-});
-
-define('Tone/component/DryWet',["Tone/core/Tone", "Tone/signal/Signal", "Tone/signal/Scale"], function(Tone){
-
-	
-
-	/**
-	 * @class  dry/wet knob.
-	 *         equal power fading control values:
-	 * 	       0 = 100% wet  -    0% dry
-	 * 	       1 =   0% wet  -  100% dry
-	 *
-	 * @constructor
-	 * @extends {Tone}
-	 * @param {number=} initialDry
-	 */		
-	Tone.DryWet = function(initialDry){
-		Tone.call(this);
-
-		/**
-		 *  connect this input to the dry signal
-		 *  the dry signal is also the default input
-		 *  
-		 *  @type {GainNode}
-		 */
-		this.dry = this.input;
-
-		/**
-		 *  connect this input to the wet signal
-		 *  
-		 *  @type {GainNode}
-		 */
-		this.wet = this.context.createGain();
-
-		/**
-		 *  controls the amount of wet signal 
-		 *  which is mixed into the dry signal
-		 *  
-		 *  @type {Tone.Signal}
-		 */
-		this.wetness = new Tone.Signal();
-		
-		/**
-		 *  invert the incoming signal
-		 *  @private
-		 *  @type {Tone}
-		 */
-		this._invert = new Tone.Scale(0, 1, 1, 0);
-
-		//connections
-		this.dry.connect(this.output);
-		this.wet.connect(this.output);
-		//wet control
-		this.chain(this.wetness, this.wet.gain);
-		//dry control is the inverse of the wet
-		this.chain(this.wetness, this._invert, this.dry.gain);
-		this.setDry(this.defaultArg(initialDry, 0));
-	};
-
-	Tone.extend(Tone.DryWet);
-
-	/**
-	 * Set the dry value 
-	 * 
-	 * @param {number} val
-	 * @param {Tone.Time=} rampTime
-	 */
-	Tone.DryWet.prototype.setDry = function(val, rampTime){
-		this.setWet(1-val, rampTime);
-	};
-
-	/**
-	 * Set the wet value
-	 * 
-	 * @param {number} val
-	 * @param {Tone.Time=} rampTime
-	 */
-	Tone.DryWet.prototype.setWet = function(val, rampTime){
-		if (rampTime){
-			this.wetness.linearRampToValueNow(val, rampTime);
-		} else {
-			this.wetness.setValue(val);
-		}
-	};
-
-	/**
-	 *  clean up
-	 */
-	Tone.DryWet.prototype.dispose = function(){
-		Tone.prototype.dispose.call(this);
-		this.dry.disconnect();
-		this.wet.disconnect();
-		this.wetness.dispose();
-		this._invert.dispose();
-		this.dry = null;
-		this.wet = null;
-		this.wetness = null;
-		this._invert = null;
-	};
-
-	return Tone.DryWet;
-});
-
-define('Tone/component/Filter',["Tone/core/Tone", "Tone/signal/Signal"], function(Tone){
-
-	
-
-	/**
-	 *  @class  Filter object which allows for all of the same native methods
-	 *          as the BiquadFilter (with AudioParams implemented as Tone.Signals)
-	 *          but adds the ability to set the filter rolloff at -12 (default), 
-	 *          -24 and -48. 
-	 *
-	 *  @constructor
-	 *  @extends {Tone}
-	 *  @param {number|Object=} freq the frequency
-	 *  @param {string=} type the type of filter
-	 *  @param {number=} [rolloff=-12] the rolloff which is the drop per octave. 
-	 *                                 3 choices: -12, -24, and -48
-	 */
-	Tone.Filter = function(){
-		Tone.call(this);
-
-		var options = this.optionsObject(arguments, ["frequency", "type", "rolloff"], Tone.Filter.defaults);
-
-		/**
-		 *  the filter(s)
-		 *  @type {Array.<BiquadFilterNode>}
-		 *  @private
-		 */
-		this._filters = [];
-
-		/**
-		 *  the frequency of the filter
-		 *  @type {Tone.Signal}
-		 */
-		this.frequency = new Tone.Signal(options.frequency);
-
-		/**
-		 *  the gain of the filter, only used in certain filter types
-		 *  @type {AudioParam}
-		 */
-		this.gain = new Tone.Signal(options.gain);
-
-		/**
-		 *  the Q or Quality of the filter
-		 *  @type {Tone.Signal}
-		 */
-		this.Q = new Tone.Signal(options.Q);
-
-		/**
-		 *  the type of the filter
-		 *  @type {string}
-		 *  @private
-		 */
-		this._type = options.type;
-
-		//set the rolloff and make the connections
-		this.setRolloff(options.rolloff);
-	};
-
-	Tone.extend(Tone.Filter);
-
-	/**
-	 *  the default parameters
-	 *
-	 *  @static
-	 *  @type {Object}
-	 */
-	Tone.Filter.defaults = {
-		"type" : "lowpass",
-		"frequency" : 350,
-		"rolloff" : -12,
-		"Q" : 1,
-		"gain" : 0,
-	};
-
-	/**
-	 *  set the parameters at once
-	 *  @param {Object} params
-	 */
-	Tone.Filter.prototype.set = function(params){
-		if (!this.isUndef(params.type)) this.setType(params.type);
-		if (!this.isUndef(params.frequency)) this.frequency.setValue(params.frequency);
-		if (!this.isUndef(params.Q)) this.Q.setValue(params.Q);
-		if (!this.isUndef(params.gain)) this.gain.setValue(params.gain);
-		if (!this.isUndef(params.rolloff)) this.setRolloff(params.rolloff);
-	};
-
-	/**
-	 *  set the type
-	 *  @param {string} type the filter type
-	 */
-	Tone.Filter.prototype.setType = function(type){
-		this._type = type;
-		for (var i = 0; i < this._filters.lenght; i++){
-			this._filter[i].type = type;
-		}
-	};
-
-	/**
-	 *  get the type
-	 *  @return {string} the type of the filter
-	 */
-	Tone.Filter.prototype.getType = function(){
-		return this._type;
-	};
-
-	/**
-	 *  set the rolloff frequency which is the drop in db
-	 *  per octave. implemented internally by cascading filters
-	 *  
-	 *  @param {number} rolloff the slope of the rolloff. only accepts
-	 *                          -12, -24, and -48. 
-	 */
-	Tone.Filter.prototype.setRolloff = function(rolloff){
-		//first disconnect the filters and throw them away
-		this.input.disconnect();
-		for (var i = 0; i < this._filters.length; i++) {
-			this._filters[i].disconnect();
-			this._filters[i] = null;
-		}
-		this._filters = null;
-		//make new filters
-		var cascadingCount = rolloff / -12;
-		this._filters = new Array(cascadingCount);
-		for (var count = 0; count < cascadingCount; count++){
-			var filter = this.context.createBiquadFilter();
-			filter.type = this._type;
-			this.frequency.connect(filter.frequency);
-			this.Q.connect(filter.Q);
-			this.gain.connect(filter.gain);
-			this._filters[count] = filter;
-		}
-		//connect them up
-		var connectionChain = [this.input].concat(this._filters).concat([this.output]);
-		this.chain.apply(this, connectionChain);
-	};
-
-	/**
-	 *  clean up
-	 */
-	Tone.Filter.prototype.dispose = function(){
-		for (var i = 0; i < this._filters.length; i++) {
-			this._filters[i].disconnect();
-			this._filters[i] = null;
-		}
-		this.frequency.dispose();
-		this.Q.dispose();
-		this.gain.dispose();
-		this._filters = null;
-		this.frequency = null;
-		this.Q = null;
-		this.gain = null;
-	};
-
-	return Tone.Filter;
-});
-define('Tone/component/EQ',["Tone/core/Tone", "Tone/signal/Signal", "Tone/component/Filter"], function(Tone){
-
-	
-
-	/**
-	 *  @class A 3 band EQ with control over low, mid, and high gain as
-	 *         well as the low and high crossover frequencies. 
-	 *
-	 *  @constructor
-	 *  @extends {Tone}
-	 *  
-	 *  @param {number|object=} [lowLevel=1] the gain applied to the low
-	 *  @param {number=} [midLevel=1] the gain applied to the mid
-	 *  @param {number=} [highLevel=1] the gain applied to the high
-	 */
-	Tone.EQ = function(){
-
-		Tone.call(this);
-
-		var options = this.optionsObject(arguments, ["low", "mid", "high"], Tone.EQ.defaults);
-
-		/**
-		 *  the low band
-		 *  @type {Tone.Filter}
-		 *  @private
-		 */
-		this._lowFilter = new Tone.Filter(0, "lowpass");
-
-		/**
-		 *  the lower filter of the mid band
-		 *  @type {Tone.Filter}
-		 *  @private
-		 */
-		this._lowMidFilter = new Tone.Filter(0, "highpass");
-
-		/**
-		 *  the lower filter of the mid band
-		 *  @type {Tone.Filter}
-		 *  @private
-		 */
-		this._highMidFilter = new Tone.Filter(0, "lowpass");
-
-		/**
-		 *  the high filter
-		 *  @type {Tone.Filter}
-		 *  @private
-		 */
-		this._highFilter = new Tone.Filter(0, "highpass");
-
-		/**
-		 *  the crossover frequency for lows
-		 *  @type {Tone.Signal}
-		 */
-		this.lowFrequency = new Tone.Signal(options.lowFrequency);
-
-		/**
-		 *  the crossover frequency for highs
-		 *  @type {Tone.Signal}
-		 */
-		this.highFrequency = new Tone.Signal(options.highFrequency);
-
-		/**
-		 *  the low gain
-		 *  @type {GainNode}
-		 */
-		this.lowGain = this.context.createGain();
-		this.lowGain.gain.value = options.low;
-
-		/**
-		 *  the mid gain
-		 *  @type {GainNode}
-		 */
-		this.midGain = this.context.createGain();
-		this.midGain.gain.value = options.mid;
-
-		/**
-		 *  the high gain
-		 *  @type {GainNode}
-		 */
-		this.highGain = this.context.createGain();
-		this.highGain.gain.value = options.high;
-
-		//the frequency bands
-		this.chain(this.input, this._lowFilter, this.lowGain, this.output);
-		this.chain(this.input, this._lowMidFilter, this._highMidFilter, this.midGain, this.output);
-		this.chain(this.input, this._highFilter, this.highGain, this.output);
-		//frequency control
-		this.lowFrequency.connect(this._lowFilter.frequency);
-		this.lowFrequency.connect(this._lowMidFilter.frequency);
-		this.highFrequency.connect(this._highMidFilter.frequency);
-		this.highFrequency.connect(this._highFilter.frequency);
-	};
-
-	Tone.extend(Tone.EQ);
-
-	/**
-	 *  the default values
-	 *  @type {Object}
-	 *  @static
-	 */
-	Tone.EQ.defaults = {
-		"low" : 1,
-		"mid" : 1,
-		"high" : 1,
-		"lowFrequency" : 400,
-		"highFrequency" : 2500
-	};
-
-	/**
-	 *  set the values in bulk
-	 *  @param {object} params the parameters
-	 */
-	Tone.EQ.prototype.set = function(params){
-		if (!this.isUndef(params.mid)) this.setMid(params.mid);
-		if (!this.isUndef(params.high)) this.setHigh(params.high);
-		if (!this.isUndef(params.low)) this.setLow(params.low);
-		if (!this.isUndef(params.lowFrequency)) this.lowFrequency.setValue(params.lowFrequency);
-		if (!this.isUndef(params.highFrequency)) this.highFrequency.setValue(params.highFrequency);
-	};
-
-	/**
-	 *  set the mid range
-	 *  @param {number} level the level of the mids
-	 */
-	Tone.EQ.prototype.setMid = function(level){
-		this.midGain.gain.value = level;
-	};
-
-	/**
-	 *  set the high range
-	 *  @param {number} level the level of the highs
-	 */
-	Tone.EQ.prototype.setHigh = function(level){
-		this.highGain.gain.value = level;
-	};
-
-	/**
-	 *  set the low range
-	 *  @param {number} level the level of the lows
-	 */
-	Tone.EQ.prototype.setLow = function(level){
-		this.lowGain.gain.value = level;
-	};
-
-	/**
-	 *  clean up
-	 */
-	Tone.EQ.prototype.dispose = function(){
-		Tone.prototype.dispose.call(this);
-		this._lowFilter.dispose();
-		this._lowMidFilter.dispose();
-		this._highMidFilter.dispose();
-		this._highFilter.dispose();
-		this.lowFrequency.dispose();
-		this.highFrequency.dispose();
-		this.lowGain.disconnect();
-		this.midGain.disconnect();
-		this.highGain.disconnect();
-		this._lowFilter = null;
-		this._lowMidFilter = null;
-		this._highMidFilter = null;
-		this._highFilter = null;
-		this.lowFrequency = null;
-		this.highFrequency = null;
-		this.lowGain = null;
-		this.midGain = null;
-		this.highGain = null;
-	};
-
-	return Tone.EQ;
-});
 define('Tone/component/Envelope',["Tone/core/Tone", "Tone/signal/Signal"], function(Tone){
 
 	
 
 	/**
-	 *  Envelope 
-	 *  ADR envelope generator attaches to an AudioParam or AudioNode
+	 *  @class  ADSR envelope generator attaches to an AudioParam or Signal
 	 *
 	 *  @constructor
 	 *  @extends {Tone}
@@ -1794,6 +1075,18 @@ define('Tone/component/Envelope',["Tone/core/Tone", "Tone/signal/Signal"], funct
 	};
 
 	/**
+	 *  trigger the attack and release after a sustain time
+	 *  @param {Tone.Time} duration the duration of the note
+	 *  @param {Tone.Time=} time the time of the attack
+	 *  @param {number=} velocity the velocity of the note
+	 */
+	Tone.Envelope.prototype.triggerAttackRelease = function(duration, time, velocity) {
+		time = this.toSeconds(time);
+		this.triggerAttack(time, velocity);
+		this.triggerRelease(time + this.toSeconds(duration));
+	};
+
+	/**
 	 *  borrows the connect method from {@link Tone.Signal}
 	 *  
 	 *  @function
@@ -1812,6 +1105,1089 @@ define('Tone/component/Envelope',["Tone/core/Tone", "Tone/signal/Signal"], funct
 	return Tone.Envelope;
 });
 
+define('Tone/component/AmplitudeEnvelope',["Tone/core/Tone", "Tone/component/Envelope"], function(Tone){
+
+	
+
+	/**
+	 *  @class  An Envelope connected to a gain node which can be used as an amplitude envelope.
+	 *  
+	 *  @constructor
+	 *  @extends {Tone.Envelope}
+	 *  @param {Tone.Time|Object=} attack  the attack time or an options object will all of the parameters
+	 *  @param {Tone.Time=} decay   the decay time
+	 *  @param {number=} sustain the sustain amount
+	 *  @param {Tone.Time=} release the release time
+	 */
+	Tone.AmplitudeEnvelope = function(){
+
+		Tone.Envelope.apply(this, arguments);
+
+		/**
+		 *  the input node
+		 *  @type {GainNode}
+		 */
+		this.input = this.context.createGain();
+
+		//disconenct the signal from the output
+		this._control.disconnect();
+		//connect it to the output gain
+		this._control.connect(this.output.gain);
+		//input -> output
+		this.input.connect(this.output);
+	};
+
+	Tone.extend(Tone.AmplitudeEnvelope, Tone.Envelope);
+
+	/**
+	 *  clean up
+	 */
+	Tone.AmplitudeEnvelope.prototype.dispose = function(){
+		Tone.Envelope.prototype.dispose.call(this);
+	};
+
+	return Tone.AmplitudeEnvelope;
+});
+define('Tone/signal/Add',["Tone/core/Tone", "Tone/signal/Signal"], function(Tone){
+
+	
+
+	/**
+	 *  @class Adds a value to an incoming signal
+	 *
+	 *  @constructor
+	 *  @extends {Tone}
+	 *  @param {number} value
+	 */
+	Tone.Add = function(value){
+		/**
+		 *  @private
+		 *  @type {Tone}
+		 */
+		this._value = new Tone.Signal(value);
+
+		/**
+		 *  @type {GainNode}
+		 */
+		this.input = this.output = this.context.createGain();
+
+		//connections
+		this._value.connect(this.output);
+	};
+
+	Tone.extend(Tone.Add);
+
+	/**
+	 *  set the constant
+	 *  
+	 *  @param {number} value 
+	 */
+	Tone.Add.prototype.setValue = function(value){
+		this._value.setValue(value);
+	}; 
+
+	/**
+	 *  borrows the method from {@link Tone.Signal}
+	 *  
+	 *  @function
+	 */
+	Tone.Add.prototype.connect = Tone.Signal.prototype.connect;
+
+	/**
+	 *  dispose method
+	 */
+	Tone.Add.prototype.dispose = function(){
+		Tone.prototype.dispose.call(this);
+		this._value.dispose();
+		this._value = null;
+	}; 
+
+	return Tone.Add;
+});
+define('Tone/signal/Multiply',["Tone/core/Tone", "Tone/signal/Signal"], function(Tone){
+
+	
+
+	/**
+	 *  @class  Multiply the incoming signal by some factor
+	 *
+	 *  @constructor
+	 *  @extends {Tone}
+	 *  @param {number=} value constant value to multiple
+	 */
+	Tone.Multiply = function(value){
+		/**
+		 *  the input node is the same as the output node
+		 *  it is also the GainNode which handles the scaling of incoming signal
+		 *  
+		 *  @type {GainNode}
+		 */
+		this.input = this.output = this.context.createGain();
+		
+		//apply the inital scale factor
+		this.input.gain.value = this.defaultArg(value, 1);
+	};
+
+	Tone.extend(Tone.Multiply);
+
+	/**
+	 *  set the constant multiple
+	 *  	
+	 *  @param {number} value 
+	 */
+	Tone.Multiply.prototype.setValue = function(value){
+		this.input.gain.value = value;
+	};
+
+	/**
+	 *  borrows the method from {@link Tone.Signal}
+	 *  
+	 *  @function
+	 */
+	Tone.Multiply.prototype.connect = Tone.Signal.prototype.connect;
+
+	/**
+	 *  clean up
+	 */
+	Tone.Multiply.prototype.dispose = function(){
+		Tone.prototype.dispose.call(this);
+	}; 
+
+	return Tone.Multiply;
+});
+
+define('Tone/signal/Scale',["Tone/core/Tone", "Tone/signal/Add", "Tone/signal/Multiply", "Tone/signal/Signal"], function(Tone){
+
+	
+	
+	/**
+	 *  @class  performs a linear scaling on an input signal.
+	 *          Scales from the input range of inputMin to inputMax 
+	 *          to the output range of outputMin to outputMax.
+	 *
+	 *  @description If only two arguments are provided, the inputMin and inputMax are set to -1 and 1
+	 *
+	 *  @constructor
+	 *  @extends {Tone}
+	 *  @param {number} inputMin  
+	 *  @param {number} inputMax  
+	 *  @param {number=} outputMin 
+	 *  @param {number=} outputMax 
+	 */
+	Tone.Scale = function(inputMin, inputMax, outputMin, outputMax){
+		Tone.call(this);
+
+		//if there are only two args
+		if (arguments.length == 2){
+			outputMin = inputMin;
+			outputMax = inputMax;
+			inputMin = -1;
+			inputMax = 1;
+		}
+
+		/** @private 
+			@type {number} */
+		this._inputMin = inputMin;
+		/** @private 
+			@type {number} */
+		this._inputMax = inputMax;
+		/** @private 
+			@type {number} */
+		this._outputMin = outputMin;
+		/** @private 
+			@type {number} */
+		this._outputMax = outputMax;
+
+
+		/** @private 
+			@type {Tone.Add} */
+		this._plusInput = new Tone.Add(0);
+		/** @private 
+			@type {Tone.Multiply} */
+		this._scale = new Tone.Multiply(1);
+		/** @private 
+			@type {Tone.Add} */
+		this._plusOutput = new Tone.Add(0);
+
+		//connections
+		this.chain(this.input, this._plusInput, this._scale, this._plusOutput, this.output);
+
+		//set the scaling values
+		this._setScalingParameters();
+	};
+
+	Tone.extend(Tone.Scale);
+
+	/**
+	 *  set the scaling parameters
+	 *  
+	 *  @private
+	 */
+	Tone.Scale.prototype._setScalingParameters = function(){
+		//components
+		this._plusInput.setValue(-this._inputMin);
+		this._scale.setValue((this._outputMax - this._outputMin)/(this._inputMax - this._inputMin));
+		this._plusOutput.setValue(this._outputMin);
+	};
+
+	/**
+	 *  set the input min value
+	 *  @param {number} val 
+	 */
+	Tone.Scale.prototype.setInputMin = function(val){
+		this._inputMin = val;
+		this._setScalingParameters();
+	};
+
+	/**
+	 *  set the input max value
+	 *  @param {number} val 
+	 */
+	Tone.Scale.prototype.setInputMax = function(val){
+		this._inputMax = val;
+		this._setScalingParameters();
+	};
+
+	/**
+	 *  set the output min value
+	 *  @param {number} val 
+	 */
+	Tone.Scale.prototype.setOutputMin = function(val){
+		this._outputMin = val;
+		this._setScalingParameters();
+	};
+
+	/**
+	 *  set the output max value
+	 *  @param {number} val 
+	 */
+	Tone.Scale.prototype.setOutputMax = function(val){
+		this._outputMax = val;
+		this._setScalingParameters();
+	};
+
+	/**
+	 *  borrows connect from {@link Tone.Signal}
+	 *  
+	 *  @function
+	 */
+	Tone.Scale.prototype.connect = Tone.Signal.prototype.connect;
+
+	/**
+	 *  clean up
+	 */
+	Tone.Scale.prototype.dispose = function(){
+		Tone.prototype.dispose.call(this);
+		this._plusInput.dispose();
+		this._plusOutput.dispose();
+		this._scale.dispose();
+		this._plusInput = null;
+		this._plusOutput = null;
+		this._scale = null;
+	}; 
+
+
+	return Tone.Scale;
+});
+
+define('Tone/component/DryWet',["Tone/core/Tone", "Tone/signal/Signal", "Tone/signal/Scale"], function(Tone){
+
+	
+
+	/**
+	 * @class  dry/wet knob.
+	 *         equal power fading control values:
+	 * 	       0 = 100% wet  -    0% dry
+	 * 	       1 =   0% wet  -  100% dry
+	 *
+	 * @constructor
+	 * @extends {Tone}
+	 * @param {number=} initialDry
+	 */		
+	Tone.DryWet = function(initialDry){
+		Tone.call(this);
+
+		/**
+		 *  connect this input to the dry signal
+		 *  the dry signal is also the default input
+		 *  
+		 *  @type {GainNode}
+		 */
+		this.dry = this.input;
+
+		/**
+		 *  connect this input to the wet signal
+		 *  
+		 *  @type {GainNode}
+		 */
+		this.wet = this.context.createGain();
+
+		/**
+		 *  controls the amount of wet signal 
+		 *  which is mixed into the dry signal
+		 *  
+		 *  @type {Tone.Signal}
+		 */
+		this.wetness = new Tone.Signal();
+		
+		/**
+		 *  invert the incoming signal
+		 *  @private
+		 *  @type {Tone}
+		 */
+		this._invert = new Tone.Scale(0, 1, 1, 0);
+
+		//connections
+		this.dry.connect(this.output);
+		this.wet.connect(this.output);
+		//wet control
+		this.chain(this.wetness, this.wet.gain);
+		//dry control is the inverse of the wet
+		this.chain(this.wetness, this._invert, this.dry.gain);
+		this.setDry(this.defaultArg(initialDry, 0));
+	};
+
+	Tone.extend(Tone.DryWet);
+
+	/**
+	 * Set the dry value 
+	 * 
+	 * @param {number} val
+	 * @param {Tone.Time=} rampTime
+	 */
+	Tone.DryWet.prototype.setDry = function(val, rampTime){
+		this.setWet(1-val, rampTime);
+	};
+
+	/**
+	 * Set the wet value
+	 * 
+	 * @param {number} val
+	 * @param {Tone.Time=} rampTime
+	 */
+	Tone.DryWet.prototype.setWet = function(val, rampTime){
+		if (rampTime){
+			this.wetness.linearRampToValueNow(val, rampTime);
+		} else {
+			this.wetness.setValue(val);
+		}
+	};
+
+	/**
+	 *  clean up
+	 */
+	Tone.DryWet.prototype.dispose = function(){
+		Tone.prototype.dispose.call(this);
+		this.dry.disconnect();
+		this.wet.disconnect();
+		this.wetness.dispose();
+		this._invert.dispose();
+		this.dry = null;
+		this.wet = null;
+		this.wetness = null;
+		this._invert = null;
+	};
+
+	return Tone.DryWet;
+});
+
+define('Tone/component/Filter',["Tone/core/Tone", "Tone/signal/Signal"], function(Tone){
+
+	
+
+	/**
+	 *  @class  Filter object which allows for all of the same native methods
+	 *          as the BiquadFilter (with AudioParams implemented as Tone.Signals)
+	 *          but adds the ability to set the filter rolloff at -12 (default), 
+	 *          -24 and -48. 
+	 *
+	 *  @constructor
+	 *  @extends {Tone}
+	 *  @param {number|Object=} freq the frequency
+	 *  @param {string=} type the type of filter
+	 *  @param {number=} [rolloff=-12] the rolloff which is the drop per octave. 
+	 *                                 3 choices: -12, -24, and -48
+	 */
+	Tone.Filter = function(){
+		Tone.call(this);
+
+		var options = this.optionsObject(arguments, ["frequency", "type", "rolloff"], Tone.Filter.defaults);
+
+		/**
+		 *  the filter(s)
+		 *  @type {Array.<BiquadFilterNode>}
+		 *  @private
+		 */
+		this._filters = [];
+
+		/**
+		 *  the frequency of the filter
+		 *  @type {Tone.Signal}
+		 */
+		this.frequency = new Tone.Signal(options.frequency);
+
+		/**
+		 *  the detune parameter
+		 *  @type {Tone.Signal}
+		 */
+		this.detune = new Tone.Signal(0);
+
+		/**
+		 *  the gain of the filter, only used in certain filter types
+		 *  @type {AudioParam}
+		 */
+		this.gain = new Tone.Signal(options.gain);
+
+		/**
+		 *  the Q or Quality of the filter
+		 *  @type {Tone.Signal}
+		 */
+		this.Q = new Tone.Signal(options.Q);
+
+		/**
+		 *  the type of the filter
+		 *  @type {string}
+		 *  @private
+		 */
+		this._type = options.type;
+
+		//set the rolloff and make the connections
+		this.setRolloff(options.rolloff);
+	};
+
+	Tone.extend(Tone.Filter);
+
+	/**
+	 *  the default parameters
+	 *
+	 *  @static
+	 *  @type {Object}
+	 */
+	Tone.Filter.defaults = {
+		"type" : "lowpass",
+		"frequency" : 350,
+		"rolloff" : -12,
+		"Q" : 1,
+		"gain" : 0,
+	};
+
+	/**
+	 *  set the parameters at once
+	 *  @param {Object} params
+	 */
+	Tone.Filter.prototype.set = function(params){
+		if (!this.isUndef(params.type)) this.setType(params.type);
+		if (!this.isUndef(params.detune)) this.detune.setValue(params.detune);
+		if (!this.isUndef(params.frequency)) this.frequency.setValue(params.frequency);
+		if (!this.isUndef(params.Q)) this.Q.setValue(params.Q);
+		if (!this.isUndef(params.gain)) this.gain.setValue(params.gain);
+		if (!this.isUndef(params.rolloff)) this.setRolloff(params.rolloff);
+	};
+
+	/**
+	 *  set the type
+	 *  @param {string} type the filter type
+	 */
+	Tone.Filter.prototype.setType = function(type){
+		this._type = type;
+		for (var i = 0; i < this._filters.length; i++){
+			this._filters[i].type = type;
+		}
+	};
+
+	/**
+	 *  get the type
+	 *  @return {string} the type of the filter
+	 */
+	Tone.Filter.prototype.getType = function(){
+		return this._type;
+	};
+
+	/**
+	 *  set the frequency
+	 *  @param {number} freq the frequency value
+	 */
+	Tone.Filter.prototype.setFrequency = function(freq){
+		this.frequency.setValue(freq);
+	};
+
+	/**
+	 *  set the quality of the filter
+	 *  @param {number} Q the filter's Q
+	 */
+	Tone.Filter.prototype.setQ = function(Q){
+		this.Q.setValue(Q);
+	};
+
+	/**
+	 *  set the rolloff frequency which is the drop in db
+	 *  per octave. implemented internally by cascading filters
+	 *  
+	 *  @param {number} rolloff the slope of the rolloff. only accepts
+	 *                          -12, -24, and -48. 
+	 */
+	Tone.Filter.prototype.setRolloff = function(rolloff){
+		var cascadingCount = Math.log(rolloff / -12) / Math.LN2 + 1;
+		//check the rolloff is valid
+		if (cascadingCount % 1 !== 0){
+			throw new RangeError("Filter rolloff can only be -12, -24, or -48");
+		}
+		//first disconnect the filters and throw them away
+		this.input.disconnect();
+		for (var i = 0; i < this._filters.length; i++) {
+			this._filters[i].disconnect();
+			this._filters[i] = null;
+		}
+		this._filters = new Array(cascadingCount);
+		for (var count = 0; count < cascadingCount; count++){
+			var filter = this.context.createBiquadFilter();
+			filter.type = this._type;
+			this.frequency.connect(filter.frequency);
+			this.detune.connect(filter.detune);
+			this.Q.connect(filter.Q);
+			this.gain.connect(filter.gain);
+			this._filters[count] = filter;
+		}
+		//connect them up
+		var connectionChain = [this.input].concat(this._filters).concat([this.output]);
+		this.chain.apply(this, connectionChain);
+	};
+
+	/**
+	 *  clean up
+	 */
+	Tone.Filter.prototype.dispose = function(){
+		Tone.prototype.dispose.call(this);
+		for (var i = 0; i < this._filters.length; i++) {
+			this._filters[i].disconnect();
+			this._filters[i] = null;
+		}
+		this.frequency.dispose();
+		this.Q.dispose();
+		this.detune.dispose();
+		this.gain.dispose();
+		this._filters = null;
+		this.frequency = null;
+		this.Q = null;
+		this.gain = null;
+		this.detune = null;
+	};
+
+	return Tone.Filter;
+});
+define('Tone/component/EQ',["Tone/core/Tone", "Tone/signal/Signal", "Tone/component/Filter"], function(Tone){
+
+	
+
+	/**
+	 *  @class A 3 band EQ with control over low, mid, and high gain as
+	 *         well as the low and high crossover frequencies. 
+	 *
+	 *  @constructor
+	 *  @extends {Tone}
+	 *  
+	 *  @param {number|object} [lowLevel=0] the gain applied to the lows (in db)
+	 *  @param {number} [midLevel=0] the gain applied to the mid (in db)
+	 *  @param {number} [highLevel=0] the gain applied to the high (in db)
+	 */
+	Tone.EQ = function(){
+
+		Tone.call(this);
+
+		var options = this.optionsObject(arguments, ["low", "mid", "high"], Tone.EQ.defaults);
+
+		/**
+		 *  the low band
+		 *  @type {Tone.Filter}
+		 *  @private
+		 */
+		this._lowFilter = new Tone.Filter(0, "lowpass");
+
+		/**
+		 *  the lower filter of the mid band
+		 *  @type {Tone.Filter}
+		 *  @private
+		 */
+		this._lowMidFilter = new Tone.Filter(0, "highpass");
+
+		/**
+		 *  the lower filter of the mid band
+		 *  @type {Tone.Filter}
+		 *  @private
+		 */
+		this._highMidFilter = new Tone.Filter(0, "lowpass");
+
+		/**
+		 *  the high filter
+		 *  @type {Tone.Filter}
+		 *  @private
+		 */
+		this._highFilter = new Tone.Filter(0, "highpass");
+
+		/**
+		 *  the crossover frequency for lows
+		 *  @type {Tone.Signal}
+		 */
+		this.lowFrequency = new Tone.Signal(options.lowFrequency);
+
+		/**
+		 *  the crossover frequency for highs
+		 *  @type {Tone.Signal}
+		 */
+		this.highFrequency = new Tone.Signal(options.highFrequency);
+
+		/**
+		 *  the low gain
+		 *  @type {GainNode}
+		 */
+		this.lowGain = this.context.createGain();
+
+		/**
+		 *  the mid gain
+		 *  @type {GainNode}
+		 */
+		this.midGain = this.context.createGain();
+
+		/**
+		 *  the high gain
+		 *  @type {GainNode}
+		 */
+		this.highGain = this.context.createGain();
+
+		//the frequency bands
+		this.chain(this.input, this._lowFilter, this.lowGain, this.output);
+		this.chain(this.input, this._lowMidFilter, this._highMidFilter, this.midGain, this.output);
+		this.chain(this.input, this._highFilter, this.highGain, this.output);
+		//frequency control
+		this.lowFrequency.connect(this._lowFilter.frequency);
+		this.lowFrequency.connect(this._lowMidFilter.frequency);
+		this.highFrequency.connect(this._highMidFilter.frequency);
+		this.highFrequency.connect(this._highFilter.frequency);
+		//set the gains
+		this.setLow(options.low);
+		this.setMid(options.mid);
+		this.setHigh(options.high);
+	};
+
+	Tone.extend(Tone.EQ);
+
+	/**
+	 *  the default values
+	 *  @type {Object}
+	 *  @static
+	 */
+	Tone.EQ.defaults = {
+		"low" : 0,
+		"mid" : 0,
+		"high" : 0,
+		"lowFrequency" : 400,
+		"highFrequency" : 2500
+	};
+
+	/**
+	 *  set the values in bulk
+	 *  @param {object} params the parameters
+	 */
+	Tone.EQ.prototype.set = function(params){
+		if (!this.isUndef(params.mid)) this.setMid(params.mid);
+		if (!this.isUndef(params.high)) this.setHigh(params.high);
+		if (!this.isUndef(params.low)) this.setLow(params.low);
+		if (!this.isUndef(params.lowFrequency)) this.lowFrequency.setValue(params.lowFrequency);
+		if (!this.isUndef(params.highFrequency)) this.highFrequency.setValue(params.highFrequency);
+	};
+
+	/**
+	 *  set the mid range
+	 *  @param {number} db the db of the mids
+	 */
+	Tone.EQ.prototype.setMid = function(db){
+		this.midGain.gain.value = this.dbToGain(db);
+	};
+
+	/**
+	 *  set the high range
+	 *  @param {number} db the db of the highs
+	 */
+	Tone.EQ.prototype.setHigh = function(db){
+		this.highGain.gain.value = this.dbToGain(db);
+	};
+
+	/**
+	 *  set the low range
+	 *  @param {number} db the db of the lows
+	 */
+	Tone.EQ.prototype.setLow = function(db){
+		this.lowGain.gain.value = this.dbToGain(db);
+	};
+
+	/**
+	 *  clean up
+	 */
+	Tone.EQ.prototype.dispose = function(){
+		Tone.prototype.dispose.call(this);
+		this._lowFilter.dispose();
+		this._lowMidFilter.dispose();
+		this._highMidFilter.dispose();
+		this._highFilter.dispose();
+		this.lowFrequency.dispose();
+		this.highFrequency.dispose();
+		this.lowGain.disconnect();
+		this.midGain.disconnect();
+		this.highGain.disconnect();
+		this._lowFilter = null;
+		this._lowMidFilter = null;
+		this._highMidFilter = null;
+		this._highFilter = null;
+		this.lowFrequency = null;
+		this.highFrequency = null;
+		this.lowGain = null;
+		this.midGain = null;
+		this.highGain = null;
+	};
+
+	return Tone.EQ;
+});
+define('Tone/signal/ScaleExp',["Tone/core/Tone", "Tone/signal/Add", "Tone/signal/Multiply", "Tone/signal/Signal"], function(Tone){
+	
+	/**
+	 *  @class  performs an exponential scaling on an input signal.
+	 *          Scales from the input range of inputMin to inputMax 
+	 *          to the output range of outputMin to outputMax.
+	 *
+	 *  @description If only two arguments are provided, the inputMin and inputMax are set to -1 and 1
+	 *
+	 *  @constructor
+	 *  @extends {Tone}
+	 *  @param {number} inputMin  
+	 *  @param {number} inputMax  
+	 *  @param {number} outputMin 
+	 *  @param {number=} outputMax 
+	 *  @param {number=} [exponent=2] the exponent which scales the incoming signal
+	 */
+	Tone.ScaleExp = function(inputMin, inputMax, outputMin, outputMax, exponent){
+
+		Tone.call(this);
+
+		//if there are only two args
+		if (arguments.length === 2){
+			outputMin = inputMin;
+			outputMax = inputMax;
+			exponent = 2;
+			inputMin = -1;
+			inputMax = 1;
+		} else if (arguments.length === 3){
+			exponent = outputMin;
+			outputMin = inputMin;
+			outputMax = inputMax;
+			inputMin = -1;
+			inputMax = 1;
+		}
+
+		/** 
+		 *  @private
+		 *  @type {number}
+		 */
+		this._inputMin = inputMin;
+		
+		/** 
+		 *  @private
+		 *  @type {number}
+		 */
+		this._inputMax = inputMax;
+
+		/** 
+		 *  @private
+		 *  @type {number}
+		 */
+		this._outputMin = outputMin;
+
+		/** 
+		 *  @private
+		 *  @type {number}
+		 */
+		this._outputMax = outputMax;
+
+
+		/** 
+		 *  @private
+		 *  @type {Tone.Add}
+		 */
+		this._plusInput = new Tone.Add(0);
+
+		/** 
+		 *  @private
+		 *  @type {Tone.Multiply}
+		 */
+		this._normalize = new Tone.Multiply(1);
+
+		/** 
+		 *  @private
+		 *  @type {Tone.Multiply}
+		 */
+		this._scale = new Tone.Multiply(1);
+
+		/** 
+		 *  @private
+		 *  @type {Tone.Add}
+		 */
+		this._plusOutput = new Tone.Add(0);
+
+		/**
+		 *  @private
+		 *  @type {WaveShaperNode}
+		 */
+		this._expScaler = this.context.createWaveShaper();
+
+		//connections
+		this.chain(this.input, this._plusInput, this._normalize, this._expScaler, this._scale, this._plusOutput, this.output);
+		//set the scaling values
+		this._setScalingParameters();
+		this.setExponent(this.defaultArg(exponent, 2));
+	};
+
+	Tone.extend(Tone.ScaleExp);
+
+	/**
+	 *  set the scaling parameters
+	 *  
+	 *  @private
+	 */
+	Tone.ScaleExp.prototype._setScalingParameters = function(){
+		//components
+		this._plusInput.setValue(-this._inputMin);
+		this._scale.setValue((this._outputMax - this._outputMin));
+		this._normalize.setValue(1 / (this._inputMax - this._inputMin));
+		this._plusOutput.setValue(this._outputMin);
+	};
+
+	/**
+	 *  set the exponential scaling curve
+	 *  @param {number} exp the exponent to raise the incoming signal to
+	 */
+	Tone.ScaleExp.prototype.setExponent = function(exp){
+		var curveLength = 1024;
+		var curve = new Float32Array(curveLength);
+		for (var i = 0; i < curveLength; i++){
+			var normalized = (i / (curveLength)) * 2 - 1;
+			if (normalized >= 0){
+				curve[i] = Math.pow(normalized, exp);
+			} else {
+				curve[i] = normalized;
+			}
+		}
+		this._expScaler.curve = curve;
+	};
+
+	/**
+	 *  set the input min value
+	 *  @param {number} val 
+	 */
+	Tone.ScaleExp.prototype.setInputMin = function(val){
+		this._inputMin = val;
+		this._setScalingParameters();
+	};
+
+	/**
+	 *  set the input max value
+	 *  @param {number} val 
+	 */
+	Tone.ScaleExp.prototype.setInputMax = function(val){
+		this._inputMax = val;
+		this._setScalingParameters();
+	};
+
+	/**
+	 *  set the output min value
+	 *  @param {number} val 
+	 */
+	Tone.ScaleExp.prototype.setOutputMin = function(val){
+		this._outputMin = val;
+		this._setScalingParameters();
+	};
+
+	/**
+	 *  set the output max value
+	 *  @param {number} val 
+	 */
+	Tone.ScaleExp.prototype.setOutputMax = function(val){
+		this._outputMax = val;
+		this._setScalingParameters();
+	};
+
+	/**
+	 *  borrows connect from {@link Tone.Signal}
+	 *  
+	 *  @function
+	 */
+	Tone.ScaleExp.prototype.connect = Tone.Signal.prototype.connect;
+
+	/**
+	 *  clean up
+	 */
+	Tone.ScaleExp.prototype.dispose = function(){
+		Tone.prototype.dispose.call(this);
+		this._plusInput.dispose();
+		this._plusOutput.dispose();
+		this._normalize.dispose();
+		this._scale.dispose();
+		this._expScaler.disconnect();
+		this._plusInput = null;
+		this._plusOutput = null;
+		this._scale = null;
+		this._normalize = null;
+		this._expScaler = null;
+	}; 
+
+
+	return Tone.ScaleExp;
+});
+
+define('Tone/component/FeedbackCombFilter',["Tone/core/Tone", "Tone/signal/ScaleExp", "Tone/signal/Signal"], function(Tone){
+
+	
+
+	/**
+	 *  @class A comb filter with feedback
+	 *
+	 *  @extends {Tone}
+	 *  @constructor
+	 *  @param {number} [minDelay=0.1] the minimum delay time which the filter can have
+	 */
+	Tone.FeedbackCombFilter = function(minDelay){
+
+		Tone.call(this);
+
+		minDelay = this.defaultArg(minDelay, 0.01);
+		//the delay * samplerate = number of samples. 
+		// buffersize / number of samples = number of delays needed per buffer frame
+		var delayCount = Math.ceil(this.bufferSize / (minDelay * this.context.sampleRate));
+		//set some ranges
+		delayCount = Math.min(delayCount, 10);
+		delayCount = Math.max(delayCount, 1);
+
+		/**
+		 *  the number of filter delays
+		 *  @type {number}
+		 *  @private
+		 */
+		this._delayCount = delayCount;
+
+		/**
+		 *  @type {Array.<FilterDelay>}
+		 *  @private
+		 */
+		this._delays = new Array(this._delayCount);
+
+		/**
+		 *  the delayTime control
+		 *  @type {Tone.Signal}
+		 *  @private
+		 */
+		this._delayTime = new Tone.Signal(1);
+
+		/**
+		 *  the resonance control
+		 *  @type {Tone.Signal}
+		 */
+		this.resonance = new Tone.Signal(0.5);
+
+		/**
+		 *  scale the resonance value to the normal range
+		 *  @type {Tone.Scale}
+		 *  @private
+		 */
+		this._resScale = new Tone.ScaleExp(0, 1, 0.01, 1 / this._delayCount - 0.001, 0.5);
+
+		/**
+		 *  internal flag for keeping track of when frequency
+		 *  correction has been used
+		 *  @type {boolean}
+		 *  @private
+		 */
+		this._highFrequencies = false;
+
+		/**
+		 *  the feedback node
+		 *  @type {GainNode}
+		 *  @private
+		 */
+		this._feedback = this.context.createGain();
+
+		//make the filters
+		for (var i = 0; i < this._delayCount; i++) {
+			var delay = this.context.createDelay();
+			delay.connect(this._feedback);
+			this._delayTime.connect(delay.delayTime);
+			this._delays[i] = delay;
+		}
+
+		//connections
+		this.input.connect(this._delays[0]);
+		this._feedback.connect(this._delays[0]);
+		this.chain.apply(this, this._delays);
+		//resonance control
+		this.chain(this.resonance, this._resScale, this._feedback.gain);
+		this._feedback.connect(this.output);
+		//set the delay to the min value initially
+		this.setDelayTime(minDelay);
+	};
+
+	Tone.extend(Tone.FeedbackCombFilter);
+
+	/**
+	 *  set the delay time of the comb filter
+	 *  auto corrects for sample offsets for small delay amounts
+	 *  	
+	 *  @param {number} delayAmount the delay amount
+	 *  @param {Tone.Time=} time        when the change should occur
+	 */
+	Tone.FeedbackCombFilter.prototype.setDelayTime = function(delayAmount, time) {
+		time = this.toSeconds(time);
+		//the number of samples to delay by
+		var sampleRate = this.context.sampleRate;
+		var delaySamples = sampleRate * delayAmount;
+		// delayTime corection when frequencies get high
+		time = this.toSeconds(time);
+		var cutoff = 100;
+		if (delaySamples < cutoff){
+			this._highFrequencies = true;
+			var changeNumber = Math.round((delaySamples / cutoff) * this._delayCount);
+			for (var i = 0; i < changeNumber; i++) {
+				this._delays[i].delayTime.setValueAtTime(1 / sampleRate, time);
+			}
+			delayAmount = Math.floor(delaySamples) / sampleRate;
+		} else if (this._highFrequencies){
+			this._highFrequencies = false;
+			for (var j = 0; j < this._delays.length; j++) {
+				this._delays[j].delayTime.setValueAtTime(0, time);
+			}
+		}
+		this._delayTime.setValueAtTime(delayAmount, time);
+	};
+
+	/**
+	 *  clean up
+	 */
+	Tone.FeedbackCombFilter.prototype.dispose = function(){
+		Tone.prototype.dispose.call(this);
+		//dispose the filter delays
+		for (var i = 0; i < this._delays.length; i++) {
+			this._delays[i].disconnect();
+			this._delays[i] = null;
+		}
+		this._delayTime.dispose();
+		this.resonance.dispose();
+		this._resScale.dispose();
+		this._feedback.disconnect();
+		this._delays = null;
+		this.resonance = null;
+		this._resScale = null;
+		this._feedback = null;
+		this._delayTime = null;
+	};
+
+	return Tone.FeedbackCombFilter;
+});
 define('Tone/signal/Threshold',["Tone/core/Tone", "Tone/signal/Signal"], function(Tone){
 
 	
@@ -1852,7 +2228,7 @@ define('Tone/signal/Threshold',["Tone/core/Tone", "Tone/signal/Signal"], functio
 		this._thresh.connect(this._doubleThresh);
 
 		this._setThresh(this._thresh, this.defaultArg(thresh, 0));
-		this._setThresh(this._doubleThresh, 1);
+		this._setThresh(this._doubleThresh, 0.5);
 	};
 
 	Tone.extend(Tone.Threshold);
@@ -1897,6 +2273,7 @@ define('Tone/signal/Threshold',["Tone/core/Tone", "Tone/signal/Signal"], functio
 	 *  dispose method
 	 */
 	Tone.Threshold.prototype.dispose = function(){
+		Tone.prototype.dispose.call(this);
 		this._thresh.disconnect();
 		this._doubleThresh.disconnect();
 		this._thresh = null;
@@ -1972,6 +2349,7 @@ function(Tone){
 	 *  dispose method
 	 */
 	Tone.EqualZero.prototype.dispose = function(){
+		Tone.prototype.dispose.call(this);
 		this._equals.disconnect();
 		this._thresh.dispose();
 		this._equals = null;
@@ -2039,6 +2417,7 @@ define('Tone/signal/Equal',["Tone/core/Tone", "Tone/signal/EqualZero", "Tone/sig
 	 *  dispose method
 	 */
 	Tone.Equal.prototype.dispose = function(){
+		Tone.prototype.dispose.call(this);
 		this._equals.disconnect();
 		this._adder.dispose();
 		this._equals = null;
@@ -2047,12 +2426,12 @@ define('Tone/signal/Equal',["Tone/core/Tone", "Tone/signal/EqualZero", "Tone/sig
 
 	return Tone.Equal;
 });
-define('Tone/signal/Selector',["Tone/core/Tone", "Tone/signal/Equal", "Tone/signal/Signal"], function(Tone){
+define('Tone/signal/Select',["Tone/core/Tone", "Tone/signal/Equal", "Tone/signal/Signal"], function(Tone){
 
 	
 
 	/**
-	 *  @class Selector between any number of inputs, sending the one 
+	 *  @class Select between any number of inputs, sending the one 
 	 *         selected by the gate signal to the output
 	 *
 	 *
@@ -2060,13 +2439,13 @@ define('Tone/signal/Selector',["Tone/core/Tone", "Tone/signal/Equal", "Tone/sign
 	 *  @extends {Tone}
 	 *  @param {number=} [sourceCount=2] the number of inputs the switch accepts
 	 */
-	Tone.Selector = function(sourceCount){
+	Tone.Select = function(sourceCount){
 
 		sourceCount = this.defaultArg(sourceCount, 2);
 
 		/**
 		 *  the array of inputs
-		 *  @type {Array<SelectorGate>}
+		 *  @type {Array<SelectGate>}
 		 */
 		this.input = new Array(sourceCount);
 
@@ -2084,21 +2463,21 @@ define('Tone/signal/Selector',["Tone/core/Tone", "Tone/signal/Equal", "Tone/sign
 
 		//make all the inputs and connect them
 		for (var i = 0; i < sourceCount; i++){
-			var switchGate = new SelectorGate(i);
+			var switchGate = new SelectGate(i);
 			this.input[i] = switchGate;
 			this.gate.connect(switchGate.selecter);
 			switchGate.connect(this.output);
 		}
 	};
 
-	Tone.extend(Tone.Selector);
+	Tone.extend(Tone.Select);
 
 	/**
 	 *  open one of the inputs and close the other
 	 *  @param {number=} [which=0] open one of the gates (closes the other)
 	 *  @param {Tone.Time} time the time when the switch will open
 	 */
-	Tone.Selector.prototype.select = function(which, time){
+	Tone.Select.prototype.select = function(which, time){
 		//make sure it's an integer
 		which = Math.floor(which);
 		this.gate.setValueAtTime(which, this.toSeconds(time));
@@ -2109,31 +2488,30 @@ define('Tone/signal/Selector',["Tone/core/Tone", "Tone/signal/Equal", "Tone/sign
 	 *  
 	 *  @function
 	 */
-	Tone.Selector.prototype.connect = Tone.Signal.prototype.connect;
+	Tone.Select.prototype.connect = Tone.Signal.prototype.connect;
 
 	/**
 	 *  dispose method
 	 */
-	Tone.Selector.prototype.dispose = function(){
-		this.output.disconnect();
+	Tone.Select.prototype.dispose = function(){
 		this.gate.dispose();
 		for (var i = 0; i < this.input.length; i++){
 			this.input[i].dispose();
 			this.input[i] = null;
 		}
+		Tone.prototype.dispose.call(this);
 		this.gate = null;
-		this.output = null;
 	}; 
 
 	////////////START HELPER////////////
 
 	/**
-	 *  helper class for Tone.Selector representing a single gate
+	 *  helper class for Tone.Select representing a single gate
 	 *  @constructor
 	 *  @extends {Tone}
-	 *  @internal only used by Tone.Selector
+	 *  @internal only used by Tone.Select
 	 */
-	var SelectorGate = function(num){
+	var SelectGate = function(num){
 
 		/**
 		 *  the selector
@@ -2151,13 +2529,14 @@ define('Tone/signal/Selector',["Tone/core/Tone", "Tone/signal/Equal", "Tone/sign
 		this.selecter.connect(this.gate.gain);
 	};
 
-	Tone.extend(SelectorGate);
+	Tone.extend(SelectGate);
 
 	/**
 	 *  clean up
 	 *  @private
 	 */
-	SelectorGate.prototype.dispose = function(){
+	SelectGate.prototype.dispose = function(){
+		Tone.prototype.dispose.call(this);
 		this.selecter.dispose();
 		this.gate.disconnect();
 		this.selecter = null;
@@ -2166,8 +2545,8 @@ define('Tone/signal/Selector',["Tone/core/Tone", "Tone/signal/Equal", "Tone/sign
 
 	////////////END HELPER////////////
 
-	//return Tone.Selector
-	return Tone.Selector;
+	//return Tone.Select
+	return Tone.Select;
 });
 define('Tone/signal/Negate',["Tone/core/Tone", "Tone/signal/Multiply", "Tone/signal/Signal"], function(Tone){
 
@@ -2206,13 +2585,22 @@ define('Tone/signal/Negate',["Tone/core/Tone", "Tone/signal/Multiply", "Tone/sig
 	 *  clean up
 	 */
 	Tone.Negate.prototype.dispose = function(){
-		this.input.disconnect();
-		this.input = null;
+		Tone.prototype.dispose.call(this);
+		this._multiply.dispose();
+		this._multiply = null;
 	}; 
 
 	return Tone.Negate;
 });
-define('Tone/signal/LessThan',["Tone/core/Tone", "Tone/signal/Threshold", "Tone/signal/Add", "Tone/signal/Signal"], function(Tone){
+define('Tone/signal/Not',["Tone/core/Tone", "Tone/signal/EqualZero"], function(Tone){
+
+	
+
+	Tone.Not = Tone.EqualZero;
+
+	return Tone.Not;
+});
+define('Tone/signal/LessThan',["Tone/core/Tone", "Tone/signal/Threshold", "Tone/signal/Add", "Tone/signal/Signal", "Tone/signal/Not"], function(Tone){
 
 	
 
@@ -2224,17 +2612,6 @@ define('Tone/signal/LessThan',["Tone/core/Tone", "Tone/signal/Threshold", "Tone/
 	 *  @param {number=} [value=0] the value to compare to the incoming signal
 	 */
 	Tone.LessThan = function(value){
-		/**
-		 *  @type {WaveShaperNode}
-		 *  @private
-		 */
-		this._lt = this.context.createWaveShaper();
-
-		/**
-		 *  @type {Tone.Threshold}
-		 *  @private
-		 */
-		this._thresh = new Tone.Threshold(0.5);
 
 		/**
 		 *  subtract the value from the incoming signal
@@ -2243,6 +2620,18 @@ define('Tone/signal/LessThan',["Tone/core/Tone", "Tone/signal/Threshold", "Tone/
 		 *  @private
 		 */
 		this._adder = new Tone.Add(this.defaultArg(-value, 0));
+
+		/**
+		 *  @type {Tone.Threshold}
+		 *  @private
+		 */
+		this._thresh = new Tone.Threshold(0);
+
+		/**
+		 *  @type {Tone.Not}
+		 *  @private
+		 */
+		this._not = new Tone.Not();
 
 		/**
 	 	 *  alias for the adder
@@ -2254,32 +2643,13 @@ define('Tone/signal/LessThan',["Tone/core/Tone", "Tone/signal/Threshold", "Tone/
 		 *  alias for the thresh
 		 *  @type {Tone.Threshold}
 		 */
-		this.output = this._thresh;
+		this.output = this._not;
 
 		//connect
-		this.chain(this._adder, this._lt, this._thresh);
-		//setup waveshaper
-		this._setLessThanZero();
+		this.chain(this._adder, this._thresh, this._not);
 	};
 
 	Tone.extend(Tone.LessThan);
-
-	/**
-	 *  @private
-	 */
-	Tone.LessThan.prototype._setLessThanZero = function(){
-		var curveLength = 1023;
-		var curve = new Float32Array(curveLength);
-		for (var i = 0; i < curveLength; i++){
-			var normalized = (i / (curveLength - 1)) * 2 - 1;
-			if (normalized < 0){
-				curve[i] = 1;
-			} else {
-				curve[i] = 0;
-			}
-		}
-		this._lt.curve = curve;
-	};
 
 	/**
 	 *  set the value to compare to
@@ -2301,17 +2671,18 @@ define('Tone/signal/LessThan',["Tone/core/Tone", "Tone/signal/Threshold", "Tone/
 	 *  dispose method
 	 */
 	Tone.LessThan.prototype.dispose = function(){
-		this._lt.disconnect();
+		Tone.prototype.dispose.call(this);
 		this._adder.disconnect();
 		this._thresh.dispose();
-		this._lt = null;
+		this._not.dispose();
 		this._adder = null;
 		this._thresh = null;
+		this._not = null;
 	};
 
 	return Tone.LessThan;
 });
-define('Tone/signal/Abs',["Tone/core/Tone", "Tone/signal/Selector", "Tone/signal/Negate", "Tone/signal/LessThan", "Tone/signal/Signal"], 
+define('Tone/signal/Abs',["Tone/core/Tone", "Tone/signal/Select", "Tone/signal/Negate", "Tone/signal/LessThan", "Tone/signal/Signal"], 
 function(Tone){
 
 	
@@ -2332,10 +2703,10 @@ function(Tone){
 		this._ltz = new Tone.LessThan(0);
 
 		/**
-		 *  @type {Tone.Selector}
+		 *  @type {Tone.Select}
 		 *  @private
 		 */
-		this._switch = new Tone.Selector(2);
+		this._switch = new Tone.Select(2);
 		
 		/**
 		 *  @type {Tone.Negate}
@@ -2562,7 +2933,7 @@ function(Tone){
 
 	return Tone.Follower;
 });
-define('Tone/signal/GreaterThan',["Tone/core/Tone", "Tone/signal/Threshold", "Tone/signal/Add", "Tone/signal/Signal"], function(Tone){
+define('Tone/signal/GreaterThan',["Tone/core/Tone", "Tone/signal/LessThan", "Tone/signal/Negate", "Tone/signal/Signal"], function(Tone){
 
 	
 
@@ -2575,61 +2946,34 @@ define('Tone/signal/GreaterThan',["Tone/core/Tone", "Tone/signal/Threshold", "To
 	 */
 	Tone.GreaterThan = function(value){
 		/**
-		 *  @type {WaveShaperNode}
+		 *  @type {Tone.LessThan}
 		 *  @private
 		 */
-		this._gt = this.context.createWaveShaper();
+		this._lt = new Tone.LessThan(-value);
 
 		/**
-		 *  @type {Tone.Threshold}
+		 *  @type {Tone.Negate}
 		 *  @private
 		 */
-		this._thresh = new Tone.Threshold(0.001);
-
-		/**
-		 *  subtract the value from the incoming signal
-		 *  
-		 *  @type {Tone.Add}
-		 *  @private
-		 */
-		this._adder = new Tone.Add(this.defaultArg(-value, 0));
+		this._neg = new Tone.Negate();
 
 		/**
 	 	 *  alias for the adder
 		 *  @type {Tone.Add}
 		 */
-		this.input = this._adder;
+		this.input = this._neg;
 
 		/**
 		 *  alias for the thresh
 		 *  @type {Tone.Threshold}
 		 */
-		this.output = this._thresh;
+		this.output = this._lt;
 
 		//connect
-		this.chain(this._adder, this._gt, this._thresh);
-		//setup waveshaper
-		this._setGreaterThanZero();
+		this._neg.connect(this._lt);
 	};
 
 	Tone.extend(Tone.GreaterThan);
-
-	/**
-	 *  @private
-	 */
-	Tone.GreaterThan.prototype._setGreaterThanZero = function(){
-		var curveLength = 1023;
-		var curve = new Float32Array(curveLength);
-		for (var i = 0; i < curveLength; i++){
-			var normalized = (i / (curveLength - 1)) * 2 - 1;
-			if (normalized > 0){
-				curve[i] = 1;
-			} else {
-				curve[i] = 0;
-			}
-		}
-		this._gt.curve = curve;
-	};
 
 	/**
 	 *  set the value to compare to
@@ -2637,7 +2981,7 @@ define('Tone/signal/GreaterThan',["Tone/core/Tone", "Tone/signal/Threshold", "To
 	 *  @param {number} value
 	 */
 	Tone.GreaterThan.prototype.setValue = function(value){
-		this._adder.setValue(-value);
+		this._lt.setValue(-value);
 	};
 
 	/**
@@ -2651,12 +2995,11 @@ define('Tone/signal/GreaterThan',["Tone/core/Tone", "Tone/signal/Threshold", "To
 	 *  dispose method
 	 */
 	Tone.GreaterThan.prototype.dispose = function(){
-		this._gt.disconnect();
-		this._adder.disconnect();
-		this._thresh.dispose();
-		this._gt = null;
-		this._adder = null;
-		this._thresh = null;
+		Tone.prototype.dispose.call(this);
+		this._lt.disconnect();
+		this._neg.disconnect();
+		this._lt = null;
+		this._neg = null;
 	};
 
 	return Tone.GreaterThan;
@@ -2672,21 +3015,22 @@ define('Tone/component/Gate',["Tone/core/Tone", "Tone/component/Follower", "Tone
 	 *  @constructor
 	 *  @extends {Tone}
 	 *  @param {number=} [thresh = -40] the threshold in Decibels
-	 *  @param {number=} [smoothTime = 0.1] the amount of smoothing applied to the 
-	 *                               		incoming signal
+	 *  @param {number=} [attackTime = 0.1] the follower's attacktime
+	 *  @param {number=} [releaseTime = 0.1] the follower's release time
 	 */
-	Tone.Gate = function(thresh, smoothTime){
+	Tone.Gate = function(thresh, attackTime, releaseTime){
 		Tone.call(this);
 
 		//default values
 		thresh = this.defaultArg(thresh, -40);
-		smoothTime = this.defaultArg(smoothTime, 0.1);
+		attackTime = this.defaultArg(attackTime, 0.1);
+		releaseTime = this.defaultArg(releaseTime, 0.2);
 
 		/**
 		 *  @type {Tone.Follower}
 		 *  @private
 		 */
-		this._follower = new Tone.Follower(smoothTime);
+		this._follower = new Tone.Follower(attackTime, releaseTime);
 
 		/**
 		 *  @type {Tone.GreaterThan}
@@ -2697,7 +3041,7 @@ define('Tone/component/Gate',["Tone/core/Tone", "Tone/component/Follower", "Tone
 		//the connections
 		this.chain(this.input, this.output);
 		//the control signal
-		this.chain(this.input, this._follower, this._gt, this.output.gain);
+		this.chain(this.input, this._gt, this._follower, this.output.gain);
 	};
 
 	Tone.extend(Tone.Gate);
@@ -2711,11 +3055,19 @@ define('Tone/component/Gate',["Tone/core/Tone", "Tone/component/Follower", "Tone
 	};
 
 	/**
-	 *  set the amount of smoothing applied to the incoming signal
-	 *  @param {Tone.Time} smoothTime 
+	 *  set attack time of the follower
+	 *  @param {Tone.Time} attackTime
 	 */
-	Tone.Gate.prototype.setSmoothTime = function(smoothTime){
-		this._follower.setSmoothTime(smoothTime);
+	Tone.Gate.prototype.setAttack = function(attackTime){
+		this._follower.setAttack(attackTime);
+	};
+
+	/**
+	 *  set attack time of the follower
+	 *  @param {Tone.Time} releaseTime
+	 */
+	Tone.Gate.prototype.setRelease = function(releaseTime){
+		this._follower.setRelease(releaseTime);
 	};
 
 	/**
@@ -2743,13 +3095,16 @@ define('Tone/core/Clock',["Tone/core/Tone", "Tone/signal/Signal"], function(Tone
 	 * 	@internal
 	 * 	@constructor
 	 * 	@extends {Tone}
-	 * 	@param {number} rate the number of 
+	 * 	@param {number} rate the rate of the callback
+	 * 	@param {function} callback the callback to be invoked with the time of the audio event
+	 * 	                           NB: it is very important that only 
 	 */
 	Tone.Clock = function(rate, callback){
 
 		/**
 		 *  the oscillator
 		 *  @type {OscillatorNode}
+		 *  @private
 		 */
 		this._oscillator = null;
 
@@ -2829,14 +3184,17 @@ define('Tone/core/Clock',["Tone/core/Tone", "Tone/signal/Signal"], function(Tone
 		this._upTick = false;
 		var startTime = this.toSeconds(time);
 		this._oscillator.start(startTime);
+		this._oscillator.onended = function(){};
 	};
 
 	/**
 	 *  stop the clock
 	 *  @param {Tone.Time} time the time when the clock should stop
+	 *  @param {function} onend called when the oscilator stops
 	 */
-	Tone.Clock.prototype.stop = function(time){
+	Tone.Clock.prototype.stop = function(time, onend){
 		var stopTime = this.toSeconds(time);
+		this._oscillator.onended = onend;
 		this._oscillator.stop(stopTime);
 	};
 
@@ -2849,11 +3207,19 @@ define('Tone/core/Clock',["Tone/core/Tone", "Tone/signal/Signal"], function(Tone
 		var bufferSize = this._jsNode.bufferSize;
 		var incomingBuffer = event.inputBuffer.getChannelData(0);
 		var upTick = this._upTick;
+		var self = this;
 		for (var i = 0; i < bufferSize; i++){
 			var sample = incomingBuffer[i];
 			if (sample > 0 && !upTick){
 				upTick = true;	
-				this.tick(now + this.samplesToSeconds(i));
+				//get the callback out of audio thread
+				setTimeout(function(){
+					//to account for the double buffering
+					var tickTime = now + self.samplesToSeconds(i + bufferSize * 2);
+					return function(){
+						self.tick(tickTime);
+					};
+				}(), 0); // jshint ignore:line
 			} else if (sample < 0 && upTick){
 				upTick = false;
 			}
@@ -2868,6 +3234,7 @@ define('Tone/core/Clock',["Tone/core/Tone", "Tone/signal/Signal"], function(Tone
 		this._jsNode.disconnect();
 		this._controlSignal.dispose();
 		if (this._oscillator){
+			this._oscillator.onended();
 			this._oscillator.disconnect();
 		}
 		this._jsNode.onaudioprocess = function(){};
@@ -2884,13 +3251,38 @@ function(Tone){
 	
 
 	/**
+	 *  Time can be descibed in a number of ways. 
+	 *  Any Method which accepts Tone.Time as a parameter will accept: 
+	 *  
+	 *  Numbers, which will be taken literally as the time (in seconds). 
+	 *  
+	 *  Notation, ("4n", "8t") describes time in BPM and time signature relative values. 
+	 *  
+	 *  Transport Time, ("4:3:2") will also provide tempo and time signature relative times 
+	 *  in the form BARS:QUARTERS:SIXTEENTHS.
+	 *  
+	 *  Frequency, ("8hz") is converted to the length of the cycle in seconds.
+	 *  
+	 *  Now-Relative, ("+1") prefix any of the above with "+" and it will be interpreted as 
+	 *  "the current time plus whatever expression follows".
+	 *  
+	 *  Expressions, ("3:0 + 2 - (1m / 7)") any of the above can also be combined 
+	 *  into a mathematical expression which will be evaluated to compute the desired time.
+	 *  
+	 *  No Argument, for methods which accept time, no argument will be interpreted as 
+	 *  0 seconds or "now" (i.e. the currentTime) depending on the context.
+	 *  
+	 *  @typedef {number|string|undefined} Tone.Time 
+	 */
+
+	/**
 	 *  @class  oscillator-based transport allows for simple musical timing
 	 *          supports tempo curves and time changes
 	 *
 	 *  @constructor
 	 *  @extends {Tone}
 	 */
-	var Transport = function(){
+	Tone.Transport = function(){
 
 		/**
 		 *  watches the main oscillator for timing ticks
@@ -2912,7 +3304,7 @@ function(Tone){
 		this.state = TransportState.STOPPED;
 	};
 
-	Tone.extend(Transport);
+	Tone.extend(Tone.Transport);
 
 	/** 
 	 * @private 
@@ -2998,15 +3390,17 @@ function(Tone){
 	 *  @param   {number} tickTime clock relative tick time
 	 *  @private
 	 */
-	Transport.prototype._processTick = function(tickTime){
-		processIntervals(tickTime);
-		processTimeouts(tickTime);
-		processTimeline(tickTime);
-		transportTicks += 1;
-		timelineTicks += 1;
-		if (this.loop){
-			if (timelineTicks === loopEnd){
-				this._setTicks(loopStart);
+	Tone.Transport.prototype._processTick = function(tickTime){
+		if (this.state === TransportState.STARTED){
+			processIntervals(tickTime);
+			processTimeouts(tickTime);
+			processTimeline(tickTime);
+			transportTicks += 1;
+			timelineTicks += 1;
+			if (this.loop){
+				if (timelineTicks === loopEnd){
+					this._setTicks(loopStart);
+				}
 			}
 		}
 	};
@@ -3018,7 +3412,7 @@ function(Tone){
 	 *  @param   {number} ticks the tick to jump to
 	 *  @private
 	 */
-	Transport.prototype._setTicks = function(ticks){
+	Tone.Transport.prototype._setTicks = function(ticks){
 		timelineTicks = ticks;
 		for (var i = 0; i < transportTimeline.length; i++){
 			var timeout = transportTimeline[i];
@@ -3075,8 +3469,8 @@ function(Tone){
 			var evnt = transportTimeline[i];
 			var callbackTick = evnt.callbackTick();
 			if (callbackTick === timelineTicks){
-				evnt.doCallback(time);
 				timelineProgress = i;
+				evnt.doCallback(time);
 			} else if (callbackTick > timelineTicks){
 				break;
 			} 
@@ -3089,13 +3483,19 @@ function(Tone){
 
 	/**
 	 *  intervals are recurring events 
+	 *
+	 *  @example
+	 *  //triggers a callback every 8th note with the exact time of the event
+	 *  Tone.Transport.setInterval(function(time){
+	 *  	envelope.triggerAttack(time);
+	 *  }, "8n");
 	 *  
 	 *  @param {function} callback
 	 *  @param {Tone.Time}   interval 
 	 *  @param {Object}   ctx  the context the function is invoked in
 	 *  @return {number} the id of the interval
 	 */
-	Transport.prototype.setInterval = function(callback, interval, ctx){
+	Tone.Transport.prototype.setInterval = function(callback, interval, ctx){
 		var tickTime = this.toTicks(interval);
 		var timeout = new TimelineEvent(callback, ctx, tickTime, transportTicks);
 		intervals.push(timeout);
@@ -3107,7 +3507,7 @@ function(Tone){
 	 *  @param  {number} rmInterval 	the interval to remove
 	 *  @return {boolean}            	true if the event was removed
 	 */
-	Transport.prototype.clearInterval = function(rmInterval){
+	Tone.Transport.prototype.clearInterval = function(rmInterval){
 		for (var i = 0; i < intervals.length; i++){
 			var interval = intervals[i];
 			if (interval.id === rmInterval){
@@ -3121,7 +3521,7 @@ function(Tone){
 	/**
 	 *  removes all of the intervals that are currently set
 	 */
-	Transport.prototype.clearIntervals = function(){
+	Tone.Transport.prototype.clearIntervals = function(){
 		intervals = [];
 	};
 
@@ -3130,14 +3530,22 @@ function(Tone){
 	///////////////////////////////////////////////////////////////////////////////
 
 	/**
-	 *  set a timeout to occur after time from now
+	 *  set a timeout to occur after time from now. NB: the transport must be 
+	 *  running for this to be triggered. All timeout events are cleared when the 
+	 *  transport is stopped. 
+	 *
+	 *  @example
+	 *  //trigger an event to happen 1 second from now
+	 *  Tone.Transport.setTimeout(function(time){
+	 *  	player.start(time);
+	 *  }, 1)
 	 *  
 	 *  @param {function} callback 
 	 *  @param {Tone.Time}   time     
 	 *  @param {Object}   ctx      the context to invoke the callback in
 	 *  @return {number} the id of the timeout for clearing timeouts
 	 */
-	Transport.prototype.setTimeout = function(callback, time, ctx){
+	Tone.Transport.prototype.setTimeout = function(callback, time, ctx){
 		var ticks = this.toTicks(time);
 		var timeout = new TimelineEvent(callback, ctx, ticks + transportTicks, 0);
 		//put it in the right spot
@@ -3158,7 +3566,7 @@ function(Tone){
 	 *  @param  {number} timeoutID 
 	 *  @return {boolean}           true if the timeout was removed
 	 */
-	Transport.prototype.clearTimeout = function(timeoutID){
+	Tone.Transport.prototype.clearTimeout = function(timeoutID){
 		for (var i = 0; i < timeouts.length; i++){
 			var testTimeout = timeouts[i];
 			if (testTimeout.id === timeoutID){
@@ -3171,10 +3579,8 @@ function(Tone){
 
 	/**
 	 *  removes all of the timeouts that are currently set
-	 *
-	 *  @todo (optionally) remove events after a certain time
 	 */
-	Transport.prototype.clearTimeouts = function(){
+	Tone.Transport.prototype.clearTimeouts = function(){
 		timeouts = [];
 	};
 
@@ -3183,9 +3589,15 @@ function(Tone){
 	///////////////////////////////////////////////////////////////////////////////
 
 	/**
-	 *  Timeline events are synced to the transportTimeline of the Transport
+	 *  Timeline events are synced to the transportTimeline of the Tone.Transport
 	 *  Unlike Timeout, Timeline events will restart after the 
-	 *  Transport has been stopped and restarted. 
+	 *  Tone.Transport has been stopped and restarted. 
+	 *
+	 *  @example
+	 *  //trigger the start of a part on the 16th measure
+	 *  Tone.Transport.setTimeline(function(time){
+	 *  	part.start(time);
+	 *  }, "16m");
 	 *
 	 *  
 	 *  @param {function} 	callback 	
@@ -3193,7 +3605,7 @@ function(Tone){
 	 *  @param {Object}   	ctx      	the context in which the funtion is called
 	 *  @return {number} 				the id for clearing the transportTimeline event
 	 */
-	Transport.prototype.setTimeline = function(callback, timeout, ctx){
+	Tone.Transport.prototype.setTimeline = function(callback, timeout, ctx){
 		var ticks = this.toTicks(timeout);
 		var timelineEvnt = new TimelineEvent(callback, ctx, ticks, 0);
 		//put it in the right spot
@@ -3214,7 +3626,7 @@ function(Tone){
 	 *  @param  {number} timelineID 
 	 *  @return {boolean} true if it was removed
 	 */
-	Transport.prototype.clearTimeline = function(timelineID){
+	Tone.Transport.prototype.clearTimeline = function(timelineID){
 		for (var i = 0; i < transportTimeline.length; i++){
 			var testTimeline = transportTimeline[i];
 			if (testTimeline.id === timelineID){
@@ -3228,7 +3640,7 @@ function(Tone){
 	/**
 	 *  remove all events from the timeline
 	 */
-	Transport.prototype.clearTimelines = function(){
+	Tone.Transport.prototype.clearTimelines = function(){
 		timelineProgress = 0;
 		transportTimeline = [];
 	};
@@ -3242,7 +3654,7 @@ function(Tone){
 	 *  @param  {Tone.Time} time
 	 *  @return {number}      
 	 */
-	Transport.prototype.toTicks = function(time){
+	Tone.Transport.prototype.toTicks = function(time){
 		//get the seconds
 		var seconds = this.toSeconds(time);
 		var quarter = this.notationToSeconds("4n");
@@ -3256,7 +3668,7 @@ function(Tone){
 	 *  get the transport time
 	 *  @return {string} in transportTime format (measures:beats:sixteenths)
 	 */
-	Transport.prototype.getTransportTime = function(){
+	Tone.Transport.prototype.getTransportTime = function(){
 		var quarters = timelineTicks / tatum;
 		var measures = Math.floor(quarters / transportTimeSignature);
 		var sixteenths = Math.floor((quarters % 1) * 4);
@@ -3270,7 +3682,7 @@ function(Tone){
 	 *  	
 	 *  @param {Tone.Time} progress 
 	 */
-	Transport.prototype.setTransportTime = function(progress){
+	Tone.Transport.prototype.setTransportTime = function(progress){
 		var ticks = this.toTicks(progress);
 		this._setTicks(ticks);
 	};
@@ -3284,7 +3696,7 @@ function(Tone){
 	 *  
 	 *  @param  {Tone.Time} time
 	 */
-	Transport.prototype.start = function(time){
+	Tone.Transport.prototype.start = function(time){
 		if (this.state === TransportState.STOPPED || this.state === TransportState.PAUSED){
 			this.state = TransportState.STARTED;
 			var startTime = this.toSeconds(time);
@@ -3304,19 +3716,29 @@ function(Tone){
 	 *  
 	 *  @param  {Tone.Time} time
 	 */
-	Transport.prototype.stop = function(time){
+	Tone.Transport.prototype.stop = function(time){
 		if (this.state === TransportState.STARTED || this.state === TransportState.PAUSED){
-			this.state = TransportState.STOPPED;
 			var stopTime = this.toSeconds(time);
-			this._clock.stop(stopTime);
-			this._setTicks(0);
-			this.clearTimeouts();
+			this._clock.stop(stopTime, this._onend.bind(this));
 			//call start on each of the synced sources
 			for (var i = 0; i < SyncedSources.length; i++){
 				var source = SyncedSources[i].source;
 				source.stop(stopTime);
 			}
+		} else {
+			this._onend();
 		}
+	};
+
+	/**
+	 *  invoked when the transport is stopped
+	 *  @private
+	 */
+	Tone.Transport.prototype._onend = function(){
+		transportTicks = 0;
+		this._setTicks(0);
+		this.clearTimeouts();
+		this.state = TransportState.STOPPED;
 	};
 
 	/**
@@ -3324,7 +3746,7 @@ function(Tone){
 	 *  
 	 *  @param  {Tone.Time} time
 	 */
-	Transport.prototype.pause = function(time){
+	Tone.Transport.prototype.pause = function(time){
 		if (this.state === TransportState.STARTED){
 			this.state = TransportState.PAUSED;
 			var stopTime = this.toSeconds(time);
@@ -3347,7 +3769,7 @@ function(Tone){
 	 *  @param {number} bpm   
 	 *  @param {Tone.Time=} rampTime 
 	 */
-	Transport.prototype.setBpm = function(bpm, rampTime){
+	Tone.Transport.prototype.setBpm = function(bpm, rampTime){
 		var quarterTime = this.notationToSeconds(tatum.toString() + "n", bpm, transportTimeSignature) / 4;
 		this._clock.setRate(quarterTime, rampTime);
 	};
@@ -3357,7 +3779,7 @@ function(Tone){
 	 *  
 	 *  @return {number} 
 	 */
-	Transport.prototype.getBpm = function(){
+	Tone.Transport.prototype.getBpm = function(){
 		//convert the current frequency of the oscillator to bpm
 		var freq = this._clock.getRate();
 		return 60 * (freq / tatum);
@@ -3367,24 +3789,25 @@ function(Tone){
 	 *  set the time signature
 	 *  
 	 *  @example
-	 *  this.setTimeSignature(4); //for 4/4
+	 *  this.setTimeSignature(3, 8); // 3/8
+	 *  this.setTimeSignature(4); // 4/4
 	 *  
-	 *  @param {number} numerator   
-	 *  @param {number=} denominator defaults to 4
+	 *  @param {number} numerator  the numerator of the time signature
+	 *  @param {number=} [denominator=4] the denominator of the time signature. this should
+	 *                                   be a multiple of 2. 
 	 */
-	Transport.prototype.setTimeSignature = function(numerator, denominator){
+	Tone.Transport.prototype.setTimeSignature = function(numerator, denominator){
 		denominator = this.defaultArg(denominator, 4);
 		transportTimeSignature = numerator / (denominator / 4);
 	};
 
 	/**
-	 *  return the time signature as just the numerator
-	 *  over 4 is assumed. 
+	 *  return the time signature as just the numerator over 4. 
 	 *  for example 4/4 would return 4 and 6/8 would return 3
 	 *  
 	 *  @return {number} 
 	 */
-	Transport.prototype.getTimeSignature = function(){
+	Tone.Transport.prototype.getTimeSignature = function(){
 		return transportTimeSignature;
 	};
 
@@ -3393,7 +3816,7 @@ function(Tone){
 	 *  
 	 *  @param {Tone.Time} startPosition
 	 */
-	Transport.prototype.setLoopStart = function(startPosition){
+	Tone.Transport.prototype.setLoopStart = function(startPosition){
 		loopStart = this.toTicks(startPosition);
 	};
 
@@ -3402,7 +3825,7 @@ function(Tone){
 	 *  
 	 *  @param {Tone.Time} endPosition
 	 */
-	Transport.prototype.setLoopEnd = function(endPosition){
+	Tone.Transport.prototype.setLoopEnd = function(endPosition){
 		loopEnd = this.toTicks(endPosition);
 	};
 
@@ -3411,7 +3834,7 @@ function(Tone){
 	 *  @param {Tone.Time} startPosition 
 	 *  @param {Tone.Time} endPosition   
 	 */
-	Transport.prototype.setLoopPoint = function(startPosition, endPosition){
+	Tone.Transport.prototype.setLoopPoints = function(startPosition, endPosition){
 		this.setLoopStart(startPosition);
 		this.setLoopEnd(endPosition);
 	};
@@ -3426,7 +3849,7 @@ function(Tone){
 	 *  @param  {Tone.Source} source the source to sync to the transport
 	 *  @param {Tone.Time} delay (optionally) start the source with a delay from the transport
 	 */
-	Transport.prototype.syncSource = function(source, startDelay){
+	Tone.Transport.prototype.syncSource = function(source, startDelay){
 		SyncedSources.push({
 			source : source,
 			delay : this.toSeconds(this.defaultArg(startDelay, 0))
@@ -3438,7 +3861,7 @@ function(Tone){
 	 *  
 	 *  @param  {Tone.Source} source [description]
 	 */
-	Transport.prototype.unsyncSource = function(source){
+	Tone.Transport.prototype.unsyncSource = function(source){
 		for (var i = 0; i < SyncedSources.length; i++){
 			if (SyncedSources[i].source === source){
 				SyncedSources.splice(i, 1);
@@ -3453,8 +3876,17 @@ function(Tone){
 	 *  
 	 *  @param  {Tone.Signal} signal 
 	 */
-	Transport.prototype.syncSignal = function(signal){
-		
+	Tone.Transport.prototype.syncSignal = function(signal){
+		//overreaching. fix this. 
+		signal.sync(this._clock._controlSignal);
+	};
+
+	/**
+	 *  clean up
+	 */
+	Tone.Transport.prototype.dispose = function(){
+		this._clock.dispose();
+		this._clock = null;
 	};
 
 	///////////////////////////////////////////////////////////////////////////////
@@ -3512,15 +3944,6 @@ function(Tone){
 	 */
 	TimelineEvent.prototype.testInterval = function(tick){
 		return (tick - this.startTicks) % this.tickTime === 0;
-	};
-
-
-	/**
-	 *  clean up
-	 */
-	Transport.prototype.dispose = function(){
-		this._clock.dispose();
-		this._clock = null;
 	};
 
 
@@ -3660,15 +4083,15 @@ function(Tone){
 
 	/**
 	 *  convert ticks into seconds
-	 *  @param  {string} transportTime 
+	 *  @param  {number} ticks 
 	 *  @param {number=} bpm 
 	 *  @param {number=} timeSignature
 	 *  @return {number}               seconds
 	 */
 	Tone.prototype.ticksToSeconds = function(ticks, bpm, timeSignature){
-		ticks = parseInt(ticks);
-		var measure = this.notationToSeconds("4n", bpm, timeSignature);
-		return (measure * 4) / (tatum / ticks);
+		ticks = Math.floor(ticks);
+		var quater = this.notationToSeconds("4n", bpm, timeSignature);
+		return (quater * ticks) / (tatum);
 	};
 
 	/**
@@ -3756,8 +4179,7 @@ function(Tone){
 					//i know eval is evil, but i think it's safe here
 					time = eval(time); // jshint ignore:line
 				} catch (e){
-					console.log("problem evaluating Tone.Time: "+oringalTime);
-					time = 0;
+					throw new EvalError("problem evaluating Tone.Time: "+oringalTime);
 				}
 			} else if (this.isNotation(time)){
 				time = this.notationToSeconds(time);
@@ -3774,19 +4196,23 @@ function(Tone){
 		}
 	};
 
+	var TransportConstructor = Tone.Transport;
 	//a single transport object
-	Tone.Transport = new Transport();
-	//set the bpm initially
+	Tone.Transport = new Tone.Transport();
 	Tone.Transport.setBpm(120);
 
-
 	Tone._initAudioContext(function(){
+		//stop the clock
+		Tone.Transport.stop();
 		//get the previous bpm
 		var bpm = Tone.Transport.getBpm();
-		//make a new clocks
-		Tone.Transport._clock = new Tone.Clock(1, Tone.Transport._processTick.bind(Tone.Transport));
+		//destory the old clock
+		Tone.Transport._clock.dispose();
+		//make new Transport insides
+		TransportConstructor.call(Tone.Transport);
 		//set the bpm
 		Tone.Transport.setBpm(bpm);
+
 	});
 
 	return Tone.Transport;
@@ -4155,8 +4581,6 @@ function(Tone){
 	
 
 	/**
-	 *  Low Frequency Oscillator
-	 *
 	 *  @class  The Low Frequency Oscillator produces an output signal 
 	 *          which can be attached to an AudioParam or Tone.Signal 
 	 *          for constant control over that parameter. the LFO can 
@@ -4303,14 +4727,208 @@ function(Tone){
 	 *  disconnect and dispose
 	 */
 	Tone.LFO.prototype.dispose = function(){
+		Tone.prototype.dispose.call(this);
 		this.oscillator.dispose();
 		this._scaler.dispose();
+		this._scaler = null;
 		this.oscillator = null;
 		this.frequency = null;
-		this.output = null;
 	};
 
 	return Tone.LFO;
+});
+define('Tone/component/LowpassCombFilter',["Tone/core/Tone", "Tone/signal/ScaleExp", "Tone/signal/Signal"], function(Tone){
+
+	
+
+	/**
+	 *  @class A lowpass feedback comb filter. 
+	 *         DelayNode -> Lowpass Filter -> feedback
+	 *
+	 *  @extends {Tone}
+	 *  @constructor
+	 *  @param {number} [minDelay=0.1] the minimum delay time which the filter can have
+	 */
+	Tone.LowpassCombFilter = function(minDelay){
+
+		Tone.call(this);
+
+		minDelay = this.defaultArg(minDelay, 0.01);
+		//the delay * samplerate = number of samples. 
+		// buffersize / number of samples = number of delays needed per buffer frame
+		var delayCount = Math.ceil(this.bufferSize / (minDelay * this.context.sampleRate));
+		//set some ranges
+		delayCount = Math.min(delayCount, 10);
+		delayCount = Math.max(delayCount, 1);
+
+		/**
+		 *  the number of filter delays
+		 *  @type {number}
+		 *  @private
+		 */
+		this._filterDelayCount = delayCount;
+
+		/**
+		 *  @type {Array.<FilterDelay>}
+		 *  @private
+		 */
+		this._filterDelays = new Array(this._filterDelayCount);
+
+		/**
+		 *  the delayTime control
+		 *  @type {Tone.Signal}
+		 *  @private
+		 */
+		this._delayTime = new Tone.Signal(1);
+
+		/**
+		 *  the dampening control
+		 *  @type {Tone.Signal}
+		 */
+		this.dampening = new Tone.Signal(3000);
+
+		/**
+		 *  the resonance control
+		 *  @type {Tone.Signal}
+		 */
+		this.resonance = new Tone.Signal(0.5);
+
+		/**
+		 *  scale the resonance value to the normal range
+		 *  @type {Tone.Scale}
+		 *  @private
+		 */
+		this._resScale = new Tone.ScaleExp(0, 1, 0.01, 1 / this._filterDelayCount - 0.001, 0.5);
+
+		/**
+		 *  internal flag for keeping track of when frequency
+		 *  correction has been used
+		 *  @type {boolean}
+		 *  @private
+		 */
+		this._highFrequencies = false;
+
+		/**
+		 *  the feedback node
+		 *  @type {GainNode}
+		 *  @private
+		 */
+		this._feedback = this.context.createGain();
+
+		//make the filters
+		for (var i = 0; i < this._filterDelayCount; i++) {
+			var filterDelay = new FilterDelay(this._delayTime, this.dampening);
+			filterDelay.connect(this._feedback);
+			this._filterDelays[i] = filterDelay;
+		}
+
+		//connections
+		this.input.connect(this._filterDelays[0]);
+		this._feedback.connect(this._filterDelays[0]);
+		this.chain.apply(this, this._filterDelays);
+		//resonance control
+		this.chain(this.resonance, this._resScale, this._feedback.gain);
+		this._feedback.connect(this.output);
+		//set the delay to the min value initially
+		this.setDelayTime(minDelay);
+	};
+
+	Tone.extend(Tone.LowpassCombFilter);
+
+	/**
+	 *  set the delay time of the comb filter
+	 *  auto corrects for sample offsets for small delay amounts
+	 *  	
+	 *  @param {number} delayAmount the delay amount
+	 *  @param {Tone.Time=} time        when the change should occur
+	 */
+	Tone.LowpassCombFilter.prototype.setDelayTime = function(delayAmount, time) {
+		time = this.toSeconds(time);
+		//the number of samples to delay by
+		var sampleRate = this.context.sampleRate;
+		var delaySamples = sampleRate * delayAmount;
+		// delayTime corection when frequencies get high
+		time = this.toSeconds(time);
+		var cutoff = 100;
+		if (delaySamples < cutoff){
+			this._highFrequencies = true;
+			var changeNumber = Math.round((delaySamples / cutoff) * this._filterDelayCount);
+			for (var i = 0; i < changeNumber; i++) {
+				this._filterDelays[i].setDelay(1 / sampleRate, time);
+			}
+			delayAmount = Math.floor(delaySamples) / sampleRate;
+		} else if (this._highFrequencies){
+			this._highFrequencies = false;
+			for (var j = 0; j < this._filterDelays.length; j++) {
+				this._filterDelays[j].setDelay(0, time);
+			}
+		}
+		this._delayTime.setValueAtTime(delayAmount, time);
+	};
+
+	/**
+	 *  clean up
+	 */
+	Tone.LowpassCombFilter.prototype.dispose = function(){
+		Tone.prototype.dispose.call(this);
+		//dispose the filter delays
+		for (var i = 0; i < this._filterDelays.length; i++) {
+			this._filterDelays[i].dispose();
+			this._filterDelays[i] = null;
+		}
+		this._delayTime.dispose();
+		this.dampening.dispose();
+		this.resonance.dispose();
+		this._resScale.dispose();
+		this._feedback.disconnect();
+		this._filterDelays = null;
+		this.dampening = null;
+		this.resonance = null;
+		this._resScale = null;
+		this._feedback = null;
+		this._delayTime = null;
+	};
+
+	// BEGIN HELPER CLASS //
+
+	/**
+	 *  FilterDelay
+	 *  @internal
+	 *  @constructor
+	 *  @extends {Tone}
+	 */
+	var FilterDelay = function(delayTime, filterFreq){
+		this.delay = this.input = this.context.createDelay();
+		delayTime.connect(this.delay.delayTime);
+
+		this.filter = this.output = this.context.createBiquadFilter();
+		filterFreq.connect(this.filter.frequency);
+
+		this.filter.type = "lowpass";
+		this.filter.Q.value = 0;
+
+		this.delay.connect(this.filter);
+	};
+
+	Tone.extend(FilterDelay);
+
+	FilterDelay.prototype.setDelay = function(amount, time) {
+		this.delay.delayTime.setValueAtTime(amount, time);
+	};
+
+	/**
+	 *  clean up
+	 */
+	FilterDelay.prototype.dispose = function(){
+		this.delay.disconnect();
+		this.filter.disconnect();
+		this.delay = null;
+		this.filter = null;
+	};
+
+	// END HELPER CLASS //
+
+	return Tone.LowpassCombFilter;
 });
 define('Tone/component/Merge',["Tone/core/Tone"], function(Tone){
 
@@ -4388,15 +5006,13 @@ define('Tone/core/Master',["Tone/core/Tone"], function(Tone){
 	
 	
 	/**
-	 *  Master Output
-	 *  
-	 *  a single master output
-	 *  adds toMaster to Tone
+	 *  @class  A single master output. 
+	 *          adds toMaster to Tone
 	 *
 	 *  @constructor
 	 *  @extends {Tone}
 	 */
-	var Master = function(){
+	Tone.Master = function(){
 		//extend audio unit
 		Tone.call(this);
 
@@ -4412,13 +5028,13 @@ define('Tone/core/Master',["Tone/core/Tone"], function(Tone){
 		this.chain(this.input, this.limiter, this.output, this.context.destination);
 	};
 
-	Tone.extend(Master);
+	Tone.extend(Tone.Master);
 
 	/**
 	 *  mute the output
 	 *  @param {boolean} muted
 	 */
-	Master.prototype.mute = function(muted){
+	Tone.Master.prototype.mute = function(muted){
 		muted = this.defaultArg(muted, true);
 		if (muted){
 			this.output.gain.value = 0;
@@ -4428,18 +5044,19 @@ define('Tone/core/Master',["Tone/core/Tone"], function(Tone){
 	};
 
 	/**
-	 *  @param {number} value 
+	 *  @param {number} db volume in decibels 
 	 *  @param {Tone.Time=} fadeTime (optional) time it takes to reach the value
 	 */
-	Master.prototype.setVolume = function(value, fadeTime){
+	Tone.Master.prototype.setVolume = function(db, fadeTime){
 		var now = this.now();
+		var gain = this.dbToGain(db);
 		if (fadeTime){
 			var currentVolume = this.output.gain.value;
 			this.output.gain.cancelScheduledValues(now);
 			this.output.gain.setValueAtTime(currentVolume, now);
-			this.output.gain.linearRampToValueAtTime(value, now + this.toSeconds(fadeTime));
+			this.output.gain.linearRampToValueAtTime(gain, now + this.toSeconds(fadeTime));
 		} else {
-			this.output.gain.setValueAtTime(value, now);
+			this.output.gain.setValueAtTime(gain, now);
 		}
 	};
 
@@ -4462,14 +5079,16 @@ define('Tone/core/Master',["Tone/core/Tone"], function(Tone){
 		this.connect(Tone.Master);
 	};
 
-	Tone.Master = new Master();
+	var MasterConstructor = Tone.Master;
+
+	//a single master output
+	Tone.Master = new Tone.Master();
 
 	/**
 	 *  initialize the module and listen for new audio contexts
 	 */
 	Tone._initAudioContext(function(){
-		//a single master output
-		Master.call(Tone.Master);
+		MasterConstructor.call(Tone.Master);
 	});
 
 	return Tone.Master;
@@ -4479,11 +5098,9 @@ define('Tone/component/Meter',["Tone/core/Tone", "Tone/core/Master"], function(T
 	
 
 	/**
-	 *  get the rms of the input signal with some averaging
-	 *  can also just get the value of the signal
-	 *  or the value in dB
-	 *  
-	 *  inspired by https://github.com/cwilso/volume-meter/blob/master/volume-meter.js
+	 *  @class  Get the rms of the input signal with some averaging.
+	 *          can also just get the value of the signal
+	 *          or the value in dB. inspired by https://github.com/cwilso/volume-meter/blob/master/volume-meter.js
 	 *
 	 *  @constructor
 	 *  @extends {Tone}
@@ -4630,6 +5247,45 @@ define('Tone/component/Meter',["Tone/core/Tone", "Tone/core/Master"], function(T
 
 	return Tone.Meter;
 });
+define('Tone/component/Mono',["Tone/core/Tone", "Tone/component/Merge"], function(Tone){
+
+	
+
+	/**
+	 *  @class Transform the incoming mono or stereo signal into mono
+	 *
+	 *  @extends {Tone}
+	 *  @constructor
+	 */
+	Tone.Mono = function(){
+		Tone.call(this);
+
+		/**
+		 *  merge the signal
+		 *  @type {Tone.Merge}
+		 *  @private
+		 */
+		this._merge = new Tone.Merge();
+
+		this.input.connect(this._merge, 0, 0);
+		this.input.connect(this._merge, 0, 1);
+		this.input.gain.value = this.dbToGain(-10);
+		this._merge.connect(this.output);
+	};
+
+	Tone.extend(Tone.Mono);
+
+	/**
+	 *  clean up
+	 */
+	Tone.Mono.prototype.dispose = function(){
+		Tone.prototype.dispose.call(this);
+		this._merge.dispose();
+		this._merge = null;
+	};
+
+	return Tone.Mono;
+});
 define('Tone/component/Split',["Tone/core/Tone"], function(Tone){
 
 	
@@ -4705,12 +5361,9 @@ function(Tone){
 	/**
 	 *  Panner. 
 	 *  
-	 *  Equal Power Gain L/R Panner. Not 3D
-	 *  
-	 *  a panner uses a dry/wet knob internally
-	 *
-	 *  0 = 100% Left
-	 *  1 = 100% Right
+	 *  @class  Equal Power Gain L/R Panner. Not 3D. 
+	 *          0 = 100% Left
+	 *          1 = 100% Right
 	 *  
 	 *  @constructor
 	 *  @extends {Tone}
@@ -4783,6 +5436,7 @@ function(Tone){
 		this._dryWet = null;
 		this._splitter = null;
 		this._merger = null;
+		this.pan = null;
 	};
 
 	return Tone.Panner;
@@ -4792,9 +5446,8 @@ define('Tone/component/Recorder',["Tone/core/Tone", "Tone/core/Master"], functio
 	
 
 	/**
-	 *  Record an input into an array or AudioBuffer
-	 *
-	 *  it is limited in that the recording length needs to be known beforehand
+	 *  @class  Record an input into an array or AudioBuffer. 
+	 *          it is limited in that the recording length needs to be known beforehand
 	 *
 	 *  @constructor
 	 *  @extends {Tone}
@@ -5189,17 +5842,22 @@ define('Tone/core/Note',["Tone/core/Tone", "Tone/core/Transport"], function(Tone
 	};
 
 	/**
-	 *  parses a score and registers all of the notes
+	 *  Parses a score and registers all of the notes along the timeline. 
 	 *
-	 *  scores are a JSON object with instruments at the top level
-	 *  and an array of time, value tuples
+	 *  Scores are a JSON object with instruments at the top level
+	 *  and an array of time and values. The value of a note can be 0 or more 
+	 *  parameters. 
 	 *
-	 *  i.e. { 
+	 *  To convert MIDI files to score notation, take a look at utils/MidiToScore.js
+	 *
+	 *  @example
+	 *  var score = { 
 	 *  	"synth"  : [["0", "C3"], ["0:1", "D3"], ["0:2", "E3"], ... ],
 	 *  	"bass"  : [["0", "C2"], ["1:0", "A2"], ["2:0", "C2"], ["3:0", "A2"], ... ],
 	 *  	"drums"  : [["0", "kick"], ["0:2", "snare"], ["1:0", "kick"], ["1:2", "snare"], ... ],
 	 *  	...
-	 *  }
+	 *  };
+	 *
 	 *  @static
 	 *  @param {Object} score
 	 *  @return {Array<Tone.Note>} an array of all of the notes that were created
@@ -5208,20 +5866,124 @@ define('Tone/core/Note',["Tone/core/Tone", "Tone/core/Transport"], function(Tone
 		var notes = [];
 		for (var inst in score){
 			var part = score[inst];
-			for (var i = 0; i < part.length; i++){
-				var noteDescription = part[i];
-				var note;
-				if (Array.isArray(noteDescription)){
-					var time = noteDescription[0];
-					var value = noteDescription.slice(1);
-					note = new Tone.Note(inst, time, value);
-				} else {
-					note = new Tone.Note(inst, noteDescription);
+			if (inst === "tempo"){
+				Tone.Transport.setBpm(part);
+			} else if (inst === "timeSignature"){
+				Tone.Transport.setTimeSignature(part[0], part[1]);
+			} else if (Array.isArray(part)){
+				for (var i = 0; i < part.length; i++){
+					var noteDescription = part[i];
+					var note;
+					if (Array.isArray(noteDescription)){
+						var time = noteDescription[0];
+						var value = noteDescription.slice(1);
+						note = new Tone.Note(inst, time, value);
+					} else {
+						note = new Tone.Note(inst, noteDescription);
+					}
+					notes.push(note);
 				}
-				notes.push(note);
+			} else {
+				throw new TypeError("score parts must be Arrays");
 			}
 		}
 		return notes;
+	};
+
+	///////////////////////////////////////////////////////////////////////////
+	//	MUSIC NOTES
+	//	
+	//	Augments Tone.prototype to include note methods
+	///////////////////////////////////////////////////////////////////////////
+
+	var noteToIndex = { "c" : 0, "c#" : 1, "db" : 1, "d" : 2, "d#" : 3, "eb" : 3, 
+		"e" : 4, "f" : 5, "f#" : 6, "gb" : 6, "g" : 7, "g#" : 8, "ab" : 8, 
+		"a" : 9, "a#" : 10, "bb" : 10, "b" : 11
+	};
+
+	var noteIndexToNote = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+
+	var middleC = 261.6255653005986;
+
+	/**
+	 *  convert a note name to frequency (i.e. A4 to 440)
+	 *  @param  {string} note
+	 *  @return {number}         
+	 */
+	Tone.prototype.noteToFrequency = function(note){
+		//break apart the note by frequency and octave
+		var parts = note.split(/(\d+)/);
+		if (parts.length === 3){
+			var index = noteToIndex[parts[0].toLowerCase()];
+			var octave = parts[1];
+			var noteNumber = index + parseInt(octave, 10) * 12;
+			return Math.pow(2, (noteNumber - 48) / 12) * middleC;
+		} else {
+			return 0;
+		}
+	};
+
+	/**
+	 *  convert a note name (i.e. A4, C#5, etc to a frequency)
+	 *  @param  {number} freq
+	 *  @return {string}         
+	 */
+	Tone.prototype.frequencyToNote = function(freq){
+		var log = Math.log(freq / middleC) / Math.LN2;
+		var noteNumber = Math.round(12 * log) + 48;
+		var octave = Math.floor(noteNumber/12);
+		var noteName = noteIndexToNote[noteNumber % 12];
+		return noteName + octave.toString();
+	};
+
+	/**
+	 *  convert an interval (in semitones) to a frequency ratio
+	 *
+	 *  @example
+	 *  tone.intervalToFrequencyRatio(0); // returns 1
+	 *  tone.intervalToFrequencyRatio(12); // returns 2
+	 *  
+	 *  @param  {number} interval the number of semitones above the base note
+	 *  @return {number}          the frequency ratio
+	 */
+	Tone.prototype.intervalToFrequencyRatio = function(interval){
+		return Math.pow(2,(interval/12));
+	};
+
+	/**
+	 *  convert a midi note number into a note name
+	 *
+	 *  @example
+	 *  tone.midiToNote(60); // returns "C3"
+	 *  
+	 *  @param  {number} midiNumber the midi note number
+	 *  @return {string}            the note's name and octave
+	 */
+	Tone.prototype.midiToNote = function(midiNumber){
+		var octave = Math.floor(midiNumber / 12) - 2;
+		var note = midiNumber % 12;
+		return noteIndexToNote[note] + octave;
+	};
+
+	/**
+	 *  convert a note to it's midi value
+	 *
+	 *  @example
+	 *  tone.noteToMidi("C3"); // returns 60
+	 *  
+	 *  @param  {string} note the note name (i.e. "C3")
+	 *  @return {number} the midi value of that note
+	 */
+	Tone.prototype.noteToMidi = function(note){
+		//break apart the note by frequency and octave
+		var parts = note.split(/(\d+)/);
+		if (parts.length === 3){
+			var index = noteToIndex[parts[0].toLowerCase()];
+			var octave = parts[1];
+			return index + (parseInt(octave, 10) + 2) * 12;
+		} else {
+			return 0;
+		}
 	};
 
 	return Tone.Note;
@@ -5232,8 +5994,8 @@ define('Tone/effect/Effect',["Tone/core/Tone", "Tone/component/DryWet"], functio
 	
 	/**
 	 * 	@class  Effect is the base class for effects. connect the effect between
-	 * 	the effectSend and effectReturn GainNodes. then control the amount of
-	 * 	effect which goes to the output using the dry/wet control.
+	 * 	        the effectSend and effectReturn GainNodes. then control the amount of
+	 * 	        effect which goes to the output using the dry/wet control.
 	 *
 	 *  @constructor
 	 *  @extends {Tone}
@@ -5363,7 +6125,7 @@ define('Tone/effect/AutoPanner',["Tone/core/Tone", "Tone/effect/Effect", "Tone/c
 	
 
 	/**
-	 *  AutoPanner is a Tone.Panner with an LFO connected to the pan amount
+	 *  @class AutoPanner is a Tone.Panner with an LFO connected to the pan amount
 	 *
 	 *  @constructor
 	 *  @extends {Tone.Effect}
@@ -5467,202 +6229,9 @@ define('Tone/effect/AutoPanner',["Tone/core/Tone", "Tone/effect/Effect", "Tone/c
 	return Tone.AutoPanner;
 });
 
-define('Tone/signal/ScaleExp',["Tone/core/Tone", "Tone/signal/Add", "Tone/signal/Multiply", "Tone/signal/Signal"], function(Tone){
-	
-	/**
-	 *  @class  performs a linear scaling on an input signal.
-	 *          Scales from the input range of inputMin to inputMax 
-	 *          to the output range of outputMin to outputMax.
-	 *
-	 *  @description If only two arguments are provided, the inputMin and inputMax are set to -1 and 1
-	 *
-	 *  @constructor
-	 *  @extends {Tone}
-	 *  @param {number} inputMin  
-	 *  @param {number} inputMax  
-	 *  @param {number} outputMin 
-	 *  @param {number=} outputMax 
-	 *  @param {number=} [exponent=2] the exponent which scales the incoming signal
-	 */
-	Tone.ScaleExp = function(inputMin, inputMax, outputMin, outputMax, exponent){
-
-		Tone.call(this);
-
-		//if there are only two args
-		if (arguments.length === 2){
-			outputMin = inputMin;
-			outputMax = inputMax;
-			exponent = 2;
-			inputMin = -1;
-			inputMax = 1;
-		} else if (arguments.length === 3){
-			exponent = outputMin;
-			outputMin = inputMin;
-			outputMax = inputMax;
-			inputMin = -1;
-			inputMax = 1;
-		}
-
-		/** 
-		 *  @private
-		 *  @type {number}
-		 */
-		this._inputMin = inputMin;
-		
-		/** 
-		 *  @private
-		 *  @type {number}
-		 */
-		this._inputMax = inputMax;
-
-		/** 
-		 *  @private
-		 *  @type {number}
-		 */
-		this._outputMin = outputMin;
-
-		/** 
-		 *  @private
-		 *  @type {number}
-		 */
-		this._outputMax = outputMax;
-
-
-		/** 
-		 *  @private
-		 *  @type {Tone.Add}
-		 */
-		this._plusInput = new Tone.Add(0);
-
-		/** 
-		 *  @private
-		 *  @type {Tone.Multiply}
-		 */
-		this._normalize = new Tone.Multiply(1);
-
-		/** 
-		 *  @private
-		 *  @type {Tone.Multiply}
-		 */
-		this._scale = new Tone.Multiply(1);
-
-		/** 
-		 *  @private
-		 *  @type {Tone.Add}
-		 */
-		this._plusOutput = new Tone.Add(0);
-
-		/**
-		 *  @private
-		 *  @type {WaveShaperNode}
-		 */
-		this._expScaler = this.context.createWaveShaper();
-
-		//connections
-		this.chain(this.input, this._plusInput, this._normalize, this._expScaler, this._scale, this._plusOutput, this.output);
-		//set the scaling values
-		this._setScalingParameters();
-		this.setExponent(this.defaultArg(exponent, 2));
-	};
-
-	Tone.extend(Tone.ScaleExp);
-
-	/**
-	 *  set the scaling parameters
-	 *  
-	 *  @private
-	 */
-	Tone.ScaleExp.prototype._setScalingParameters = function(){
-		//components
-		this._plusInput.setValue(-this._inputMin);
-		this._scale.setValue((this._outputMax - this._outputMin));
-		this._normalize.setValue(1 / (this._inputMax - this._inputMin));
-		this._plusOutput.setValue(this._outputMin);
-	};
-
-	/**
-	 *  set the exponential scaling curve
-	 *  @param {number} exp the exponent to raise the incoming signal to
-	 */
-	Tone.ScaleExp.prototype.setExponent = function(exp){
-		var curveLength = 1024;
-		var curve = new Float32Array(curveLength);
-		for (var i = 0; i < curveLength; i++){
-			var normalized = (i / (curveLength)) * 2 - 1;
-			if (normalized >= 0){
-				curve[i] = Math.pow(normalized, exp);
-			} else {
-				curve[i] = normalized;
-			}
-		}
-		this._expScaler.curve = curve;
-	};
-
-	/**
-	 *  set the input min value
-	 *  @param {number} val 
-	 */
-	Tone.ScaleExp.prototype.setInputMin = function(val){
-		this._inputMin = val;
-		this._setScalingParameters();
-	};
-
-	/**
-	 *  set the input max value
-	 *  @param {number} val 
-	 */
-	Tone.ScaleExp.prototype.setInputMax = function(val){
-		this._inputMax = val;
-		this._setScalingParameters();
-	};
-
-	/**
-	 *  set the output min value
-	 *  @param {number} val 
-	 */
-	Tone.ScaleExp.prototype.setOutputMin = function(val){
-		this._outputMin = val;
-		this._setScalingParameters();
-	};
-
-	/**
-	 *  set the output max value
-	 *  @param {number} val 
-	 */
-	Tone.ScaleExp.prototype.setOutputMax = function(val){
-		this._outputMax = val;
-		this._setScalingParameters();
-	};
-
-	/**
-	 *  borrows connect from {@link Tone.Signal}
-	 *  
-	 *  @function
-	 */
-	Tone.ScaleExp.prototype.connect = Tone.Signal.prototype.connect;
-
-	/**
-	 *  clean up
-	 */
-	Tone.ScaleExp.prototype.dispose = function(){
-		this.input.disconnect();
-		this.output.disconnect();
-		this._plusInput.dispose();
-		this._plusOutput.dispose();
-		this._normalize.dispose();
-		this._scale.dispose();
-		this.input = null;
-		this.output = null;
-		this._plusInput = null;
-		this._plusOutput = null;
-		this._scale = null;
-	}; 
-
-
-	return Tone.ScaleExp;
-});
-
-define('Tone/effect/AutoWah',["Tone/core/Tone", "Tone/component/Follower", "Tone/signal/ScaleExp", "Tone/effect/Effect"], function(Tone){
+define('Tone/effect/AutoWah',["Tone/core/Tone", "Tone/component/Follower", "Tone/signal/ScaleExp", 
+"Tone/effect/Effect", "Tone/component/Filter"], 
+function(Tone){
 
 	
 
@@ -5714,7 +6283,7 @@ define('Tone/effect/AutoWah',["Tone/core/Tone", "Tone/component/Follower", "Tone
 		 *  @type {BiquadFilterNode}
 		 *  @private
 		 */
-		this._bandpass = new Tone.Filter("bandpass");
+		this._bandpass = new Tone.Filter(0, "bandpass");
 		this._bandpass.setRolloff(options.rolloff);
 		// this._bandpass.type = "bandpass";
 		// this._bandpass.Q.value = options.Q;
@@ -5826,69 +6395,199 @@ define('Tone/effect/AutoWah',["Tone/core/Tone", "Tone/component/Follower", "Tone
 
 	return Tone.AutoWah;
 });
-define('Tone/effect/BitCrusher',["Tone/core/Tone", "Tone/effect/Effect"], function(Tone){
+define('Tone/signal/Modulo',["Tone/core/Tone", "Tone/signal/Multiply"], function(Tone){
 
 	
 
 	/**
-	 *  @class downsample incoming signal
-	 *  inspiration from https://github.com/jaz303/bitcrusher/blob/master/index.js
+	 *  @class Signal-rate modulo operator. Specify the modulus and the 
+	 *         number of bits of the incoming signal. Because the operator is composed of many components, 
+	 *         fewer bits will improve performance. 
+	 *
+	 *  @constructor
+	 *  @extends {Tone}
+	 *  @param {number} modulus the modolus to apply
+	 *  @param {number} [bits=8]	optionally set the maximum bits the incoming signal can have. 
+	 *                           	defaults to 8 meaning that incoming values must be in the range
+	 *                            	[-255,255]. (2^8 = 256);
+	 */
+	Tone.Modulo = function(modulus, bits){
+
+		Tone.call(this);
+
+		bits = this.defaultArg(bits, 8);
+
+		/**
+		 *  the array of Modulus Subroutine objects
+		 *  @type {Array.<ModulusSubroutine>}
+		 *  @private
+		 */
+		this._modChain = [];
+
+		//create all of the subroutines
+		for (var i = bits - 1; i >= 0; i--){
+			var mod = new ModuloSubroutine(modulus, Math.pow(2, i));
+			this._modChain.push(mod);
+		}
+		this.chain.apply(this, this._modChain);
+		this.input.connect(this._modChain[0]);
+		this._modChain[this._modChain.length - 1].connect(this.output);
+	};
+
+	Tone.extend(Tone.Modulo);
+
+	Tone.Modulo.prototype.dispose = function(){
+		Tone.prototype.dispose.call(this);
+		for (var i = 0; i < this._modChain.length; i++) {
+			this._modChain[i].dispose();
+			this._modChain[i] = null;
+		}
+		this._modChain = null;
+	};
+
+	/**
+	 *  @class applies a modolus at a single bit depth. 
+	 *         uses this operation: http://stackoverflow.com/a/14842954
+	 *
+	 *  
+	 *  @internal helper class for modulo
+	 *  @constructor
+	 *  @extends {Tone}
+	 */
+	var ModuloSubroutine = function(modulus, multiple){
+
+		var val = modulus * multiple;
+
+		/**
+		 *  the input node
+		 */
+		this.input = this.context.createGain();
+
+		/**
+		 *  divide the incoming signal so it's on a 0 to 1 scale
+		 *  @type {Tone.Multiply}
+		 *  @private
+		 */
+		this._div = new Tone.Multiply(1 / val);
+
+		/**
+		 *  apply the equation logic
+		 *  @type {WaveShaperNode}
+		 *  @private
+		 */
+		this._operator = this.context.createWaveShaper();
+
+		//connect it up
+		this.chain(this.input, this._div, this._operator);
+		this._makeCurve(val);
+	};
+
+	Tone.extend(ModuloSubroutine);
+
+	/**
+	 * make the operator curve
+	 * @param {number} val
+	 * @private 
+	 */
+	ModuloSubroutine.prototype._makeCurve = function(val){
+		var arrayLength = Math.pow(2, 18);
+		var curve = new Float32Array(arrayLength);
+		for (var i = 0; i < curve.length; i++) {
+			if (i === arrayLength - 1){
+				curve[i] = -val;
+			} else if (i === 0){
+				curve[i] = val;
+			} else {
+				curve[i] = 0;
+			}
+		}
+		this._operator.curve = curve;
+	};
+
+	/**
+	 *  @override the default connection to connect the operator and the input to the next node
+	 *  @private
+	 */
+	ModuloSubroutine.prototype.connect = function(node){
+		this._operator.connect(node);
+		this.input.connect(node);
+	};
+
+	 /**
+	  *  internal class clean up
+	  */
+	ModuloSubroutine.prototype.dispose = function(){
+		Tone.prototype.dispose.call(this);
+		this._div.dispose();
+		this._operator.disconnect();
+		this._div = null;
+		this._operator = null;
+	};
+
+	return Tone.Modulo;
+});
+define('Tone/effect/BitCrusher',["Tone/core/Tone", "Tone/effect/Effect", "Tone/signal/Modulo", "Tone/signal/Negate", "Tone/signal/Add"], 
+function(Tone){
+
+	
+
+	/**
+	 *  @class downsample incoming signal. 
+	 *
+	 *  The algorithm to downsample the incoming signal is to scale the input
+	 *  to between [0, 2^bits) and then apply a Floor function to the scaled value, 
+	 *  then scale it back to audio range [-1, 1]
 	 *
 	 *  @constructor
 	 *  @extends {Tone.Effect}
-	 *  @param {number|Object=} bits   
-	 *  @param {number=} frequency 
+	 *  @param {number} bits 1-8. 
 	 */
 	Tone.BitCrusher = function(){
 
-		var options = this.optionsObject(arguments, ["bits", "frequency"], Tone.BitCrusher.defaults);
+		var options = this.optionsObject(arguments, ["bits"], Tone.BitCrusher.defaults);
 		Tone.Effect.call(this, options);
 
-		/** 
-		 * @private 
-		 * @type {number}
+		/**
+		 *  Used for the floor function
+		 *  @type {Tone.Modulo}
+		 *  @private
 		 */
-		this._bits = this.defaultArg(options.bits, 8);
-		
-		/** 
-		 * @private 
-		 * @type {number}
+		this._modulo = new Tone.Modulo(1, options.bits);
+
+		/**
+		 *  used for the floor function
+		 *  @type {Tone.Negate}
+		 *  @private
 		 */
-		this._frequency = this.defaultArg(options.frequency, 0.5);
-		
-		/** 
-		 * @private 
-		 * @type {number}
+		this._neg = new Tone.Negate();
+
+		/**
+		 *  Node where the subtraction occurs for floor function
+		 *  @type {GainNode}
+		 *  @private
 		 */
-		this._step = 2 * Math.pow(0.5, this._bits);
-		
-		/** 
-		 * @private 
-		 * @type {number}
+		this._sub = this.context.createGain();
+
+		var valueRange = Math.pow(2, options.bits - 1);
+
+		/**
+		 *  scale the incoming signal to [0, valueRange)
+		 *  @type {Tone.Scale}
+		 *  @private
 		 */
-		this._invStep = 1/this._step;
-		
-		/** 
-		 * @private 
-		 * @type {number}
+		this._scale = new Tone.Scale(-1, 1, 0, valueRange);
+
+		/**
+		 *  scale it back to the audio range [-1, 1]
+		 *  @type {Tone.Scale}
+		 *  @private
 		 */
-		this._phasor = 0;
-		
-		/** 
-		 * @private 
-		 * @type {number}
-		 */
-		this._last = 0;
-		
-		/** 
-		 * @private 
-		 * @type {ScriptProcessorNode}
-		 */
-		this._crusher = this.context.createScriptProcessor(this.bufferSize, 1, 1);
-		this._crusher.onaudioprocess = this._audioprocess.bind(this);
+		this._invScale = new Tone.Scale(0, valueRange, -1, 1);
 
 		//connect it up
-		this.connectEffect(this._crusher);
+		this.effectSend.connect(this._scale);
+		this._scale.connect(this._invScale);
+		this.chain(this._scale, this._modulo, this._neg, this._invScale, this.effectReturn);
 	};
 
 	Tone.extend(Tone.BitCrusher, Tone.Effect);
@@ -5899,53 +6598,19 @@ define('Tone/effect/BitCrusher',["Tone/core/Tone", "Tone/effect/Effect"], functi
 	 *  @type {Object}
 	 */
 	Tone.BitCrusher.defaults = {
-		"bits" : 8,
-		"frequency" : 0.5
-	};
-
-	/**
-	 *  @private
-	 *  @param  {AudioProcessingEvent} event
-	 */
-	Tone.BitCrusher.prototype._audioprocess = function(event){
-		//cache the values used in the loop
-		var phasor = this._phasor;
-		var freq = this._frequency;
-		var invStep = this._invStep;
-		var last = this._last;
-		var step = this._step;
-		var input = event.inputBuffer.getChannelData(0);
-		var output = event.outputBuffer.getChannelData(0);
-		for (var i = 0, len = output.length; i < len; i++) {
-			phasor += freq;
-		    if (phasor >= 1) {
-		        phasor -= 1;
-		        last = step * ((input[i] * invStep) | 0 + 0.5);
-		    }
-		    output[i] = last;
-		}
-		//set the values for the next loop
-		this._phasor = phasor;
-		this._last = last;
+		"bits" : 4
 	};
 
 	/**
 	 *  set the bit rate
 	 *  
-	 *  @param {number} bits 
+	 *  @param {number} bits the number of bits in the range [1,8]
 	 */
 	Tone.BitCrusher.prototype.setBits = function(bits){
-		this._bits = bits;
-		this._step = 2 * Math.pow(0.5, this._bits);
-		this._invStep = 1/this._step;
-	};
-
-	/**
-	 *  set the frequency
-	 *  @param {number} freq 
-	 */
-	Tone.BitCrusher.prototype.setFrequency = function(freq){
-		this._frequency = freq;
+		bits = Math.min(bits, 8);
+		var valueRange = Math.pow(2, bits - 1);
+		this._scale.setOutputMax(valueRange);
+		this._invScale.setInputMax(valueRange);
 	};
 
 	/**
@@ -5953,7 +6618,6 @@ define('Tone/effect/BitCrusher',["Tone/core/Tone", "Tone/effect/Effect"], functi
 	 *  @param {Object} params 
 	 */
 	Tone.BitCrusher.prototype.set = function(params){
-		if (!this.isUndef(params.frequency)) this.setFrequency(params.frequency);
 		if (!this.isUndef(params.bits)) this.setBits(params.bits);
 		Tone.Effect.prototype.set.call(this, params);
 	};
@@ -5963,13 +6627,21 @@ define('Tone/effect/BitCrusher',["Tone/core/Tone", "Tone/effect/Effect"], functi
 	 */
 	Tone.BitCrusher.prototype.dispose = function(){
 		Tone.Effect.prototype.dispose.call(this);
-		this._crusher.disconnect();
-		this._crusher = null;
+		this._modulo.dispose();
+		this._neg.dispose();
+		this._sub.disconnect();
+		this._scale.dispose();
+		this._invScale.dispose();
+		this._modulo = null;
+		this._neg = null;
+		this._sub = null;
+		this._scale = null;
+		this._invScale = null;
 	}; 
 
 	return Tone.BitCrusher;
 });
-define('Tone/effect/StereoEffect',["Tone/core/Tone", "Tone/effect/Effect", "Tone/component/Split", "Tone/component/Merge"], 
+define('Tone/effect/StereoEffect',["Tone/core/Tone", "Tone/effect/Effect", "Tone/component/Split", "Tone/component/Merge", "Tone/component/Mono"], 
 function(Tone){
 
 	
@@ -5995,10 +6667,10 @@ function(Tone){
 
 		/**
 		 *  make the incoming signal mono
-		 *  @type {Tone.Merge}
+		 *  @type {Tone.Mono}
 		 *  @private
 		 */
-		this._mono = new Tone.Merge();
+		this._mono = new Tone.Mono();
 
 		/**
 		 *  then split it
@@ -6039,8 +6711,7 @@ function(Tone){
 		this.effectReturnR = this._merge.right;
 
 		//connections
-		this.input.connect(this._mono, 0, 0);
-		this.input.connect(this._mono, 0, 1);
+		this.input.connect(this._mono);
 		this._mono.connect(this._split);
 		//dry wet connections
 		this._mono.connect(this.dryWet.dry);
@@ -6078,7 +6749,7 @@ define('Tone/effect/FeedbackEffect',["Tone/core/Tone", "Tone/effect/Effect", "To
 	
 	
 	/**
-	 * Feedback Effect (a sound loop between an audio source and its own output)
+	 * 	@class  Feedback Effect (a sound loop between an audio source and its own output)
 	 *
 	 *  @constructor
 	 *  @extends {Tone.Effect}
@@ -6100,6 +6771,7 @@ define('Tone/effect/FeedbackEffect',["Tone/core/Tone", "Tone/effect/Effect", "To
 		/**
 		 *  scales the feedback in half
 		 *  @type {Tone.Multiply}
+		 *  @private
 		 */
 		this._half = new Tone.Multiply(0.5);
 		
@@ -6191,6 +6863,7 @@ function(Tone){
 		/**
 		 *  scales the feedback in half
 		 *  @type {Tone.Multiply}
+		 *  @private
 		 */
 		this._half = new Tone.Multiply(0.5);
 
@@ -6403,7 +7076,7 @@ define('Tone/effect/FeedbackDelay',["Tone/core/Tone", "Tone/effect/FeedbackEffec
 	
 	
 	/**
-	 *  A feedback delay
+	 *  @class  A feedback delay
 	 *
 	 *  @constructor
 	 *  @extends {Tone.FeedbackEffect}
@@ -6480,6 +7153,325 @@ define('Tone/effect/FeedbackDelay',["Tone/core/Tone", "Tone/effect/FeedbackEffec
 
 	return Tone.FeedbackDelay;
 });
+define('Tone/effect/Freeverb',["Tone/core/Tone", "Tone/component/LowpassCombFilter", "Tone/effect/StereoEffect", "Tone/signal/Signal", "Tone/component/Split", "Tone/component/Merge"], 
+function(Tone){
+
+	
+
+	/**
+	 *  an array of comb filter delay values from Freeverb implementation
+	 *  @static
+	 *  @private
+	 *  @type {Array}
+	 */
+	var combFilterTunings = [1557 / 44100, 1617 / 44100, 1491 / 44100, 1422 / 44100, 1277 / 44100, 1356 / 44100, 1188 / 44100, 1116 / 44100];
+
+	/**
+	 *  an array of allpass filter frequency values from Freeverb implementation
+	 *  @private
+	 *  @static
+	 *  @type {Array}
+	 */
+	var allpassFilterFrequencies = [225, 556, 441, 341];
+
+	/**
+	 *  @class Reverb based on the Freeverb
+	 *
+	 *  @extends {Tone.Effect}
+	 *  @constructor
+	 *  @param {number} [roomSize=0.7] correlated to the decay time. 
+	 *                                 value between (0,1)
+	 *  @param {number} [dampening=0.5] filtering which is applied to the reverb. 
+	 *                                  value between [0,1]
+	 */
+	Tone.Freeverb = function(){
+
+		var options = this.optionsObject(arguments, ["roomSize", "dampening"], Tone.Freeverb.defaults);
+		Tone.StereoEffect.call(this, options);
+
+		/**
+		 *  the roomSize value between (0,1)
+		 *  @type {Tone.Signal}
+		 */
+		this.roomSize = new Tone.Signal(options.roomSize);
+
+		/**
+		 *  the amount of dampening
+		 *  value between [0,1]
+		 *  @type {Tone.Signal}
+		 */
+		this.dampening = new Tone.Signal(options.dampening);
+
+		/**
+		 *  scale the dampening
+		 *  @type {Tone.ScaleExp}
+		 *  @private
+		 */
+		this._dampeningScale = new Tone.ScaleExp(0, 1, 100, 8000, 0.5);
+
+		/**
+		 *  the comb filters
+		 *  @type {Array.<Tone.LowpassCombFilter>}
+		 *  @private
+		 */
+		this._combFilters = [];
+
+		/**
+		 *  the allpass filters on the left
+		 *  @type {Array.<BiqaudFilterNode>}
+		 *  @private
+		 */
+		this._allpassFiltersL = [];
+
+		/**
+		 *  the allpass filters on the right
+		 *  @type {Array.<BiqaudFilterNode>}
+		 *  @private
+		 */
+		this._allpassFiltersR = [];
+
+		//make the allpass filters on teh right
+		for (var l = 0; l < allpassFilterFrequencies.length; l++){
+			var allpassL = this.context.createBiquadFilter();
+			allpassL.type = "allpass";
+			allpassL.frequency.value = allpassFilterFrequencies[l];
+			this._allpassFiltersL.push(allpassL);
+		}
+
+		//make the allpass filters on the left
+		for (var r = 0; r < allpassFilterFrequencies.length; r++){
+			var allpassR = this.context.createBiquadFilter();
+			allpassR.type = "allpass";
+			allpassR.frequency.value = allpassFilterFrequencies[r];
+			this._allpassFiltersR.push(allpassR);
+		}
+
+		//make the comb filters
+		for (var c = 0; c < combFilterTunings.length; c++){
+			var lfpf = new Tone.LowpassCombFilter(combFilterTunings[c]);
+			if (c < combFilterTunings.length / 2){
+				this.chain(this.effectSendL, lfpf, this._allpassFiltersL[0]);
+			} else {
+				this.chain(this.effectSendR, lfpf, this._allpassFiltersR[0]);
+			}
+			this.roomSize.connect(lfpf.resonance);
+			this._dampeningScale.connect(lfpf.dampening);
+			this._combFilters.push(lfpf);
+		}
+
+		//chain the allpass filters togetehr
+		this.chain.apply(this, this._allpassFiltersL);
+		this.chain.apply(this, this._allpassFiltersR);
+		this._allpassFiltersL[this._allpassFiltersL.length - 1].connect(this.effectReturnL);
+		this._allpassFiltersR[this._allpassFiltersR.length - 1].connect(this.effectReturnR);
+		this.dampening.connect(this._dampeningScale);
+	};
+
+	Tone.extend(Tone.Freeverb, Tone.StereoEffect);
+
+	/**
+	 *  @static
+	 *  @type {Object}
+	 */
+	Tone.Freeverb.defaults = {
+		"roomSize" : 0.7, 
+		"dampening" : 0.5
+	};
+
+	/**
+	 *  set the room size
+	 *  @param {number} roomsize roomsize value between 0-1
+	 */
+	Tone.Freeverb.prototype.setRoomSize = function(roomsize) {
+		this.roomSize.setValue(roomsize);
+	};
+
+	/**
+	 *  set the dampening
+	 *  @param {number} dampening dampening between 0-1
+	 */
+	Tone.Freeverb.prototype.setDampening = function(dampening) {
+		this.dampening.setValue(dampening);
+	};
+
+	/**
+	 *  set multiple parameters at once with an object
+	 *  @param {Object} params the parameters as an object
+	 */
+	Tone.Freeverb.prototype.set = function(params){
+		if (!this.isUndef(params.dampening)) this.setDampening(params.dampening);
+		if (!this.isUndef(params.roomSize)) this.setRoomSize(params.roomSize);
+		Tone.StereoEffect.prototype.set.call(this, params);
+	};
+
+	/**
+	 *  clean up
+	 */
+	Tone.Freeverb.prototype.dispose = function(){
+		Tone.StereoEffect.prototype.dispose.call(this);
+		for (var al = 0; al < this._allpassFiltersL.length; al++) {
+			this._allpassFiltersL[al].disconnect();
+			this._allpassFiltersL[al] = null;
+		}
+		this._allpassFiltersL = null;
+		for (var ar = 0; ar < this._allpassFiltersR.length; ar++) {
+			this._allpassFiltersR[ar].disconnect();
+			this._allpassFiltersR[ar] = null;
+		}
+		this._allpassFiltersR = null;
+		for (var cf = 0; cf < this._combFilters.length; cf++) {
+			this._combFilters[cf].dispose();
+			this._combFilters[cf] = null;
+		}
+		this._combFilters = null;
+		this.roomSize.dispose();
+		this.dampening.dispose();
+		this._dampeningScale.dispose();
+		this.roomSize = null;
+		this.dampening = null;
+		this._dampeningScale = null;
+	};
+
+	return Tone.Freeverb;
+});
+define('Tone/effect/JCReverb',["Tone/core/Tone", "Tone/component/FeedbackCombFilter", "Tone/effect/StereoEffect", "Tone/signal/Scale"], 
+function(Tone){
+
+	
+
+	/**
+	 *  an array of the comb filter delay time values
+	 *  @private
+	 *  @static
+	 *  @type {Array}
+	 */
+	var combFilterDelayTimes = [1687 / 25000, 1601 / 25000, 2053 / 25000, 2251 / 25000];
+
+	/**
+	 *  the resonances of each of the comb filters
+	 *  @private
+	 *  @static
+	 *  @type {Array}
+	 */
+	var combFilterResonances = [0.773, 0.802, 0.753, 0.733];
+
+	/**
+	 *  the allpass filter frequencies
+	 *  @private
+	 *  @static
+	 *  @type {Array}
+	 */
+	var allpassFilterFreqs = [347, 113, 37];
+
+	/**
+	 *  @class a simple Schroeder Reverberators tuned by John Chowning in 1970
+	 *         made up of 3 allpass filters and 4 feedback comb filters. 
+	 *         https://ccrma.stanford.edu/~jos/pasp/Schroeder_Reverberators.html
+	 *
+	 *  @extends {Tone.Effect}
+	 *  @constructor
+	 */
+	Tone.JCReverb = function(){
+		Tone.StereoEffect.call(this);
+
+		/**
+		 *  room size control values between [0,1]
+		 *  @type {Tone.Signal}
+		 */
+		this.roomSize = new Tone.Signal(0.5);
+
+		/**
+		 *  scale the room size
+		 *  @type {Tone.Scale}
+		 *  @private
+		 */
+		this._scaleRoomSize = new Tone.Scale(0, 1, -0.733, 0.197);
+
+		/**
+		 *  a series of allpass filters
+		 *  @type {Array.<BiquadFilterNode>}
+		 *  @private
+		 */
+		this._allpassFilters = [];
+
+		/**
+		 *  parallel feedback comb filters
+		 *  @type {Array.<Tone.FeedbackCombFilter>}
+		 *  @private
+		 */
+		this._feedbackCombFilters = [];
+
+		//make the allpass filters
+		for (var af = 0; af < allpassFilterFreqs.length; af++) {
+			var allpass = this.context.createBiquadFilter();
+			allpass.type = "allpass";
+			allpass.frequency.value = allpassFilterFreqs[af];
+			this._allpassFilters.push(allpass);
+		}
+
+		//and the comb filters
+		for (var cf = 0; cf < combFilterDelayTimes.length; cf++) {
+			var fbcf = new Tone.FeedbackCombFilter(combFilterDelayTimes[cf]);
+			this._scaleRoomSize.connect(fbcf.resonance);
+			fbcf.resonance.setValue(combFilterResonances[cf]);
+			this._allpassFilters[this._allpassFilters.length - 1].connect(fbcf);
+			if (cf < combFilterDelayTimes.length / 2){
+				fbcf.connect(this.effectReturnL);
+			} else {
+				fbcf.connect(this.effectReturnR);
+			}
+			this._feedbackCombFilters.push(fbcf);
+		}
+
+		//chain the allpass filters together
+		this.roomSize.connect(this._scaleRoomSize);
+		this.chain.apply(this, this._allpassFilters);
+		this.effectSendL.connect(this._allpassFilters[0]);
+		this.effectSendR.connect(this._allpassFilters[0]);
+	};
+
+	Tone.extend(Tone.JCReverb, Tone.StereoEffect);
+
+	/**
+	 *  set the room size
+	 *  @param {number} roomsize roomsize value between 0-1
+	 */
+	Tone.JCReverb.prototype.setRoomSize = function(roomsize) {
+		this.roomSize.setValue(roomsize);
+	};
+
+	/**
+	 *  set multiple parameters at once with an object
+	 *  @param {Object} params the parameters as an object
+	 */
+	Tone.JCReverb.prototype.set = function(params){
+		if (!this.isUndef(params.roomSize)) this.setRoomSize(params.roomSize);
+		Tone.StereoEffect.prototype.set.call(this, params);
+	};
+
+	/**
+	 *  clean up
+	 */
+	Tone.JCReverb.prototype.dispose = function(){
+		Tone.StereoEffect.prototype.dispose.call(this);
+		for (var apf = 0; apf < this._allpassFilters.length; apf++) {
+			this._allpassFilters[apf].disconnect();
+			this._allpassFilters[apf] = null;
+		}
+		this._allpassFilters = null;
+		for (var fbcf = 0; fbcf < this._feedbackCombFilters.length; fbcf++) {
+			this._feedbackCombFilters[fbcf].dispose();
+			this._feedbackCombFilters[fbcf] = null;
+		}
+		this._feedbackCombFilters = null;
+		this.roomSize.dispose();
+		this._scaleRoomSize.dispose();
+		this.roomSize = null;
+		this._scaleRoomSize = null;
+	};
+
+	return Tone.JCReverb;
+});
 define('Tone/effect/StereoFeedbackEffect',["Tone/core/Tone", "Tone/effect/StereoEffect", "Tone/effect/FeedbackEffect"], 
 function(Tone){
 
@@ -6505,6 +7497,7 @@ function(Tone){
 		/**
 		 *  scales the feedback in half
 		 *  @type {Tone.Multiply}
+		 *  @private
 		 */
 		this._half = new Tone.Multiply(0.5);
 
@@ -6602,7 +7595,7 @@ function(Tone){
 		 *  @type {Array.<Tone.Filter>}
 		 *  @private
 		 */
-		this._filtersL = this._makeFilters(options.stages, this._lfoL);
+		this._filtersL = this._makeFilters(options.stages, this._lfoL, options.Q);
 
 		/**
 		 *  the array of filters for the left side
@@ -6828,7 +7821,71 @@ function(Tone){
 
 	return Tone.PingPongDelay;
 });
-define('Tone/instrument/Monophonic',["Tone/core/Tone", "Tone/source/Source", "Tone/signal/Signal"], function(Tone){
+define('Tone/instrument/Instrument',["Tone/core/Tone", "Tone/source/Source", "Tone/core/Note"], function(Tone){
+
+	
+
+	/**
+	 *  @class  Base-class for all instruments
+	 *  
+	 *  @constructor
+	 *  @extends {Tone}
+	 */
+	Tone.Instrument = function(){
+
+		/**
+		 *  the output
+		 *  @type {GainNode}
+		 */
+		this.output = this.context.createGain();
+	};
+
+	Tone.extend(Tone.Instrument);
+
+	/**
+	 *  @abstract
+	 *  @param {string|number} note the note to trigger
+	 *  @param {Tone.Time=} time the time to trigger the ntoe
+	 *  @param {number=} velocity the velocity to trigger the note
+	 */
+	Tone.Instrument.prototype.triggerAttack = function(){};
+
+	/**
+	 *  @abstract
+	 *  @param {Tone.Time=} time when to trigger the release
+	 */
+	Tone.Instrument.prototype.triggerRelease = function(){};
+
+	/**
+	 *  trigger the attack and then the release
+	 *  @param  {string|number} note     the note to trigger
+	 *  @param  {Tone.Time=} duration the duration of the note
+	 *  @param  {Tone.Time=} time     the time of the attack
+	 *  @param  {number} velocity the velocity
+	 */
+	Tone.Instrument.prototype.triggerAttackRelease = function(note, duration, time, velocity){
+		time = this.toSeconds(time);
+		duration = this.toSeconds(duration);
+		this.triggerAttack(note, time, velocity);
+		this.triggerRelease(time + duration);
+	};
+
+	/**
+	 *  gets the setVolume method from {@link Tone.Source}
+	 *  @method
+	 */
+	Tone.Instrument.prototype.setVolume = Tone.Source.prototype.setVolume;
+
+	/**
+	 *  clean up
+	 */
+	Tone.Instrument.prototype.dispose = function(){
+		Tone.prototype.dispose.call(this);
+	};
+
+	return Tone.Instrument;
+});
+define('Tone/instrument/Monophonic',["Tone/core/Tone", "Tone/instrument/Instrument", "Tone/signal/Signal"], function(Tone){
 
 	
 
@@ -6838,18 +7895,14 @@ define('Tone/instrument/Monophonic',["Tone/core/Tone", "Tone/source/Source", "To
 	 *
 	 *  @constructor
 	 *  @abstract
-	 *  @extends {Tone}
+	 *  @extends {Tone.Instrument}
 	 */
 	Tone.Monophonic = function(options){
 
+		Tone.Instrument.call(this);
+
 		//get the defaults
 		options = this.defaultArg(options, Tone.Monophonic.defaults);
-
-		/**
-		 *  the instrument's output
-		 *  @type {GainNode}
-		 */
-		this.output = this.context.createGain();
 
 		/**
 		 *  the portamento time
@@ -6858,7 +7911,7 @@ define('Tone/instrument/Monophonic',["Tone/core/Tone", "Tone/source/Source", "To
 		this.portamento = options.portamento;
 	};
 
-	Tone.extend(Tone.Monophonic);
+	Tone.extend(Tone.Monophonic, Tone.Instrument);
 
 	/**
 	 *  @static
@@ -6883,22 +7936,8 @@ define('Tone/instrument/Monophonic',["Tone/core/Tone", "Tone/source/Source", "To
 	};
 
 	/**
-	 *  trigger the attack and release after the specified duration
-	 *  
-	 *  @param  {number|string} note     the note as a number or a string note name
-	 *  @param  {Tone.Time} duration the duration of the note
-	 *  @param  {Tone.Time=} time     if no time is given, defaults to now
-	 *  @param  {number=} velocity the velocity of the attack (0-1)
-	 */
-	Tone.Monophonic.prototype.triggerAttackRelease = function(note, duration, time, velocity) {
-		time = this.toSeconds(time);
-		this.triggerAttack(note, time, velocity);
-		this.triggerRelease(time + this.toSeconds(duration));
-	};
-
-	/**
 	 *  trigger the release portion of the envelope
-	 *  @param  {Tone.Time=} [time=now] if no time is given, the release happens immediatly
+	 *  @param  {Tone.Time} [time=now] if no time is given, the release happens immediatly
 	 */
 	Tone.Monophonic.prototype.triggerRelease = function(time){
 		this.triggerEnvelopeRelease(time);
@@ -6907,16 +7946,16 @@ define('Tone/instrument/Monophonic',["Tone/core/Tone", "Tone/source/Source", "To
 	/**
 	 *  override this method with the actual method
 	 *  @abstract
-	 *  @param {Tone.Time=} [time=now] the time the attack should happen
-	 *  @param {number=} [velocity=1] the velocity of the envelope
+	 *  @param {Tone.Time} [time=now] the time the attack should happen
+	 *  @param {number} [velocity=1] the velocity of the envelope
 	 */	
 	Tone.Monophonic.prototype.triggerEnvelopeAttack = function() {};
 
 	/**
 	 *  override this method with the actual method
 	 *  @abstract
-	 *  @param {Tone.Time=} [time=now] the time the attack should happen
-	 *  @param {number=} [velocity=1] the velocity of the envelope
+	 *  @param {Tone.Time} [time=now] the time the attack should happen
+	 *  @param {number} [velocity=1] the velocity of the envelope
 	 */	
 	Tone.Monophonic.prototype.triggerEnvelopeRelease = function() {};
 
@@ -6949,12 +7988,6 @@ define('Tone/instrument/Monophonic',["Tone/core/Tone", "Tone/source/Source", "To
 	};
 
 	/**
-	 *  set volume method borrowed form {@link Tone.Source}
-	 *  @function
-	 */
-	Tone.Monophonic.prototype.setVolume = Tone.Source.prototype.setVolume;
-
-	/**
 	 *  bulk setter
 	 *  @param {Object} params the params
 	 */
@@ -6977,7 +8010,7 @@ define('Tone/instrument/Monophonic',["Tone/core/Tone", "Tone/source/Source", "To
 	 *  clean up
 	 */
 	Tone.Monophonic.prototype.dispose = function(){
-		Tone.prototype.dispose.call(this);
+		Tone.Instrument.prototype.dispose.call(this);
 	};
 
 	return Tone.Monophonic;
@@ -7000,13 +8033,12 @@ function(Tone){
 	Tone.MonoSynth = function(options){
 
 		//get the defaults
-		options = this.defaultArg(options, this.defaults);
+		options = this.defaultArg(options, Tone.MonoSynth.defaults);
 		Tone.Monophonic.call(this, options);
 
 		/**
 		 *  the first oscillator
 		 *  @type {Tone.Oscillator}
-		 *  @private
 		 */
 		this.oscillator = new Tone.Oscillator(0, options.oscType);
 
@@ -7025,7 +8057,6 @@ function(Tone){
 		/**
 		 *  the filter
 		 *  @type {Tone.Filter}
-		 *  @private
 		 */
 		this.filter = new Tone.Filter(options.filter);
 
@@ -7044,6 +8075,7 @@ function(Tone){
 		/**
 		 *  the amplitude
 		 *  @type {GainNode}
+		 *  @private
 		 */
 		this._amplitude = this.context.createGain();
 
@@ -7063,12 +8095,12 @@ function(Tone){
 	/**
 	 *  @const
 	 *  @static
+	 *  @type {Object}
 	 */
-	Tone.MonoSynth.prototype.defaults = {
+	Tone.MonoSynth.defaults = {
 		"oscType" : "square",
 		"filter" : {
 			"Q" : 6,
-			"frequency" : 4000,
 			"type" : "lowpass",
 			"rolloff" : -24
 		},
@@ -7083,7 +8115,7 @@ function(Tone){
 			"decay" : 0.2,
 			"sustain" : 0.5,
 			"release" : 2,
-			"min" : 10,
+			"min" : 20,
 			"max" : 4000
 		}
 	};
@@ -7140,14 +8172,15 @@ function(Tone){
 		this.envelope.dispose();
 		this.filterEnvelope.dispose();
 		this.filter.dispose();
-		this.detune.dispose();
-		this._unison.dispose();
+		this._amplitude.disconnect();
 		this.oscillator = null;
 		this.filterEnvelope = null;
 		this.envelope = null;
 		this.filter = null;
 		this.detune = null;
-		this._unison = null;
+		this._amplitude = null;
+		this.frequency = null;
+		this.detune = null;
 	};
 
 	return Tone.MonoSynth;
@@ -7189,6 +8222,7 @@ function(Tone){
 		/**
 		 *  the vibrato lfo
 		 *  @type {Tone.LFO}
+		 *  @private
 		 */
 		this._vibrato = new Tone.LFO(options.vibratoRate, -50, 50);
 		this._vibrato.start();
@@ -7204,12 +8238,14 @@ function(Tone){
 		/**
 		 *  the delay before the vibrato starts
 		 *  @type {number}
+		 *  @private
 		 */
 		this._vibratoDelay = this.toSeconds(options.vibratoDelay);
 
 		/**
 		 *  the amount before the vibrato starts
 		 *  @type {number}
+		 *  @private
 		 */
 		this._vibratoAmount = options.vibratoAmount;
 
@@ -7371,7 +8407,7 @@ function(Tone){
 	/**
 	 *  clean up
 	 */
-	Tone.DuoSynth.dispose = function(){
+	Tone.DuoSynth.prototype.dispose = function(){
 		Tone.Monophonic.prototype.dispose.call(this);
 		this.voice0.dispose();
 		this.voice1.dispose();
@@ -7568,7 +8604,7 @@ function(Tone){
 	/**
 	 *  clean up
 	 */
-	Tone.FMSynth.dispose = function(){
+	Tone.FMSynth.prototype.dispose = function(){
 		Tone.Monophonic.prototype.dispose.call(this);
 		this.carrier.dispose();
 		this.modulator.dispose();
@@ -7818,7 +8854,7 @@ define('Tone/source/Player',["Tone/core/Tone", "Tone/source/Source"], function(T
 	return Tone.Player;
 });
 
-define('Tone/instrument/Sampler',["Tone/core/Tone", "Tone/source/Player", "Tone/component/Envelope", "Tone/component/Filter"], 
+define('Tone/instrument/Sampler',["Tone/core/Tone", "Tone/source/Player", "Tone/component/AmplitudeEnvelope", "Tone/component/Filter", "Tone/instrument/Instrument"], 
 function(Tone){
 
 	
@@ -7829,18 +8865,15 @@ function(Tone){
 	 *         envelope.
 	 *
 	 *  @constructor
-	 *  @extends {Tone}
+	 *  @extends {Tone.Instrument}
 	 *  @param {string|object} url the url of the audio file
 	 *  @param {function} load called when the sample has been loaded
 	 */
 	Tone.Sampler = function(){
 
-		var options = this.optionsObject(arguments, ["url", "load"], Tone.Sampler.defaults);
+		Tone.Instrument.call(this);
 
-		/**
-		 *  @type {GainNode}
-		 */
-		this.output = this.context.createGain();
+		var options = this.optionsObject(arguments, ["url", "load"], Tone.Sampler.defaults);
 
 		/**
 		 *  the sample player
@@ -7853,7 +8886,7 @@ function(Tone){
 		 *  the amplitude envelope
 		 *  @type {Tone.Envelope}
 		 */
-		this.envelope = new Tone.Envelope(options.envelope);
+		this.envelope = new Tone.AmplitudeEnvelope(options.envelope);
 
 		/**
 		 *  the filter envelope
@@ -7868,12 +8901,11 @@ function(Tone){
 		this.filter = new Tone.Filter(options.filter);
 
 		//connections
-		this.chain(this.player, this.filter, this.output);
-		this.envelope.connect(this.player.output.gain);
+		this.chain(this.player, this.filter, this.envelope, this.output);
 		this.filterEnvelope.connect(this.filter.frequency);
 	};
 
-	Tone.extend(Tone.Sampler);
+	Tone.extend(Tone.Sampler, Tone.Instrument);
 
 	/**
 	 *  the default parameters
@@ -7894,7 +8926,7 @@ function(Tone){
 			"decay" : 0.001,
 			"sustain" : 1,
 			"release" : 0.5,
-			"min" : 0,
+			"min" : 20,
 			"max" : 20000
 		},
 		"filter" : {
@@ -7914,11 +8946,15 @@ function(Tone){
 
 	/**
 	 *  start the sample
-	 *  
-	 *  @param {Tone.Time=} [time=now] the time when the note should start
-	 *  @param {number=} velocity the velocity of the note
+	 *
+	 *  @param {number} [note=0] the interval in the sample should be played at 0 = no change
+	 *  @param {Tone.Time} [time=now] the time when the note should start
+	 *  @param {number} [velocity=1] the velocity of the note
 	 */
-	Tone.Sampler.prototype.triggerAttack = function(time, velocity){
+	Tone.Sampler.prototype.triggerAttack = function(note, time, velocity){
+		time = this.toSeconds(time);
+		note = this.defaultArg(note, 0);
+		this.player.setPlaybackRate(this.intervalToFrequencyRatio(note), time);
 		this.player.start(time);
 		this.envelope.triggerAttack(time, velocity);
 		this.filterEnvelope.triggerAttack(time);
@@ -7927,9 +8963,10 @@ function(Tone){
 	/**
 	 *  start the release portion of the sample
 	 *  
-	 *  @param {Tone.Time=} [time=now] the time when the note should release
+	 *  @param {Tone.Time} [time=now] the time when the note should release
 	 */
 	Tone.Sampler.prototype.triggerRelease = function(time){
+		time = this.toSeconds(time);
 		this.filterEnvelope.triggerRelease(time);
 		this.envelope.triggerRelease(time);
 	};
@@ -7938,7 +8975,7 @@ function(Tone){
 	 *  clean up
 	 */
 	Tone.Sampler.prototype.dispose = function(){
-		Tone.prototype.dispose.call(this);
+		Tone.Instrument.prototype.dispose.call(this);
 		this.player.dispose();
 		this.filterEnvelope.dispose();
 		this.envelope.dispose();
@@ -7952,7 +8989,7 @@ function(Tone){
 	return Tone.Sampler;
 });
 
-define('Tone/instrument/MultiSampler',["Tone/core/Tone", "Tone/instrument/Sampler", "Tone/source/Source"], 
+define('Tone/instrument/MultiSampler',["Tone/core/Tone", "Tone/instrument/Sampler", "Tone/instrument/Instrument"], 
 function(Tone){
 
 	
@@ -7972,17 +9009,14 @@ function(Tone){
 	 *  sampler.triggerAttack("kick");
 	 *
 	 *  @constructor
-	 *  @extends {Tone}
+	 *  @extends {Tone.Instrument}
 	 *  @param {Object} samples the samples used in this
 	 *  @param {function} onload the callback to invoke when all 
 	 *                           of the samples have been loaded
 	 */
 	Tone.MultiSampler = function(samples, onload){
 
-	 	/**
-	 	 *  @type {GainNode}
-	 	 */
-		this.output = this.context.createGain();
+	 	Tone.Instrument.call(this);
 
 	 	/**
 	 	 *  the array of voices
@@ -7994,7 +9028,7 @@ function(Tone){
 		this._createSamples(samples, onload);
 	};
 
-	Tone.extend(Tone.MultiSampler);
+	Tone.extend(Tone.MultiSampler, Tone.Instrument);
 
 	/**
 	 *  creates all of the samples and tracks their loading
@@ -8032,27 +9066,46 @@ function(Tone){
 		}
 	};
 
-	 /**
-	  *  start a sample
-	  *  
-	  *  @param  {string} sample the note name to start
-	  *  @param {Tone.Time=} [time=now] the time when the note should start
-	  */
-	Tone.MultiSampler.prototype.triggerAttack = function(sample, time){
+	/**
+	 *  start a sample
+	 *  
+	 *  @param  {string} sample the note name to start
+	 *  @param {Tone.Time=} [time=now] the time when the note should start
+	 *  @param {number} [velocity=1] the velocity of the note
+	 */
+	Tone.MultiSampler.prototype.triggerAttack = function(sample, time, velocity){
 		if (this.samples.hasOwnProperty(sample)){
-			this.samples[sample].triggerAttack(time);
+			this.samples[sample].triggerAttack(0, time, velocity);
 		}
 	};
 
-	 /**
-	  *  start the release portion of the note
-	  *  
-	  *  @param  {string} sample the note name to release
-	  *  @param {Tone.Time=} [time=now] the time when the note should release
-	  */
+	/**
+	 *  start the release portion of the note
+	 *  
+	 *  @param  {string} sample the note name to release
+	 *  @param {Tone.Time=} [time=now] the time when the note should release
+	 */
 	Tone.MultiSampler.prototype.triggerRelease = function(sample, time){
 		if (this.samples.hasOwnProperty(sample)){
 			this.samples[sample].triggerRelease(time);
+		}
+	};
+
+	/**
+	  *  start the release portion of the note
+	  *  
+	  *  @param  {string} sample the note name to release
+	  *  @param {Tone.Time} duration the duration of the note
+	  *  @param {Tone.Time} [time=now] the time when the note should start
+	  *  @param {number} [velocity=1] the velocity of the note
+	  */
+	Tone.MultiSampler.prototype.triggerAttackRelease = function(sample, duration, time, velocity){
+		if (this.samples.hasOwnProperty(sample)){
+			time = this.toSeconds(time);
+			duration = this.toSeconds(duration);
+			var samp = this.samples[sample];
+			samp.triggerAttack(0, time, velocity);
+			samp.triggerRelease(time + duration);
 		}
 	};
 
@@ -8076,704 +9129,18 @@ function(Tone){
 	/**
 	 *  clean up
 	 */
-	Tone.MultiSampler.dispose = function(){
-		Tone.prototype.dispose.call(this);
+	Tone.MultiSampler.prototype.dispose = function(){
+		Tone.Instrument.prototype.dispose.call(this);
 		for (var samp in this.samples){
 			this.samples[samp].dispose();
 			this.samples[samp] = null;
 		}
+		this.samples = null;
 	};
 
 	return Tone.MultiSampler;
 });
 
-define('Tone/instrument/PolySynth',["Tone/core/Tone", "Tone/instrument/MonoSynth", "Tone/source/Source"], 
-function(Tone){
-
-	
-
-	/**
-	 *  @class  Creates a polyphonic synthesizer out of 
-	 *          the monophonic voice which is passed in. 
-	 *
-	 *  @constructor
-	 *  @extends {Tone}
-	 *  @param {number|Object} [polyphony=6] the number of voices to create
-	 *  @param {function=} [voice=Tone.MonoSynth] the constructor of the voices
-	 *                                            uses Tone.MonoSynth by default
-	 *  @param {Object} voiceOptions the options to pass to the voice                                          
-	 */
-	Tone.PolySynth = function(){
-
-		var options = this.optionsObject(arguments, ["polyphony", "voice", "voiceOptions"], Tone.PolySynth.defaults);
-
-		/**
-		 *  the output
-		 *  @type {GainNode}
-		 */
-		this.output = this.context.createGain();
-
-		/**
-		 *  the array of voices
-		 *  @private
-		 *  @type {Array}
-		 */
-		this._voices = new Array(options.polyphony);
-
-		/**
-		 *  the queue of free voices
-		 *  @private
-		 *  @type {Array}
-		 */
-		this._freeVoices = [];
-
-		/**
-		 *  keeps track of which notes are down
-		 *  @private
-		 *  @type {Object}
-		 */
-		this._activeVoices = {};
-
-		//create the voices
-		for (var i = 0; i < options.polyphony; i++){
-			var v = new options.voice(options.voiceOptions);
-			this._voices[i] = v;
-			v.connect(this.output);
-		}
-
-		//make a copy of the voices
-		this._freeVoices = this._voices.slice(0);
-	};
-
-	Tone.extend(Tone.PolySynth);
-
-	/**
-	 *  the defaults
-	 *  @const
-	 *  @static
-	 *  @type {Object}
-	 */
-	Tone.PolySynth.defaults = {
-		"polyphony" : 4,
-		"voice" : Tone.MonoSynth,
-		"voiceOptions" : {
-			"portamento" : 0
-		}
-	};
-
-	/**
-	 *  trigger the attack
-	 *  @param  {string|number|Object} value the value of the note to start
-	 *  @param  {Tone.Time=} [time=now]  the start time of the note
-	 *  @param {number=} velocity the velocity of the note
-	 */
-	Tone.PolySynth.prototype.triggerAttack = function(value, time, velocity){
-		var stringified = JSON.stringify(value);
-		if (this._activeVoices[stringified]){
-			this._activeVoices[stringified].triggerAttack(value, time, velocity);
-		} else if (this._freeVoices.length > 0){
-			var voice = this._freeVoices.shift();
-			voice.triggerAttack(value, time);
-			this._activeVoices[stringified] = voice;
-		}
-	};
-
-	/**
-	 *  trigger the attack and release after the specified duration
-	 *  
-	 *  @param  {number|string} note     the note as a number or a string note name
-	 *  @param  {Tone.Time} duration the duration of the note
-	 *  @param  {Tone.Time=} time     if no time is given, defaults to now
-	 *  @param  {number=} velocity the velocity of the attack (0-1)
-	 */
-	Tone.PolySynth.prototype.triggerAttackRelease = function(value, duration, time, velocity){
-		time = this.toSeconds(time);
-		this.triggerAttack(value, time, velocity);
-		this.triggerRelease(time + this.toSeconds(duration));
-	};
-
-	/**
-	 *  trigger the release of a note
-	 *  @param  {string|number|Object} value the value of the note to release
-	 *  @param  {Tone.Time=} [time=now]  the release time of the note
-	 */
-	Tone.PolySynth.prototype.triggerRelease = function(value, time){
-		//get the voice
-		var stringified = JSON.stringify(value);
-		var voice = this._activeVoices[stringified];
-		if (voice){
-			voice.triggerRelease(time);
-			this._freeVoices.push(voice);
-			this._activeVoices[stringified] = null;
-		}
-	};
-
-	/**
-	 *  set the options on all of the voices
-	 *  @param {Object} params 
-	 */
-	Tone.PolySynth.prototype.set = function(params){
-		for (var i = 0; i < this._voices.length; i++){
-			this._voices[i].set(params);
-		}
-	};
-
-	/**
-	 *  set volume method borrowed form {@link Tone.Source}
-	 *  @function
-	 */
-	Tone.PolySynth.prototype.setVolume = Tone.Source.prototype.setVolume;
-
-	/**
-	 *  clean up
-	 */
-	Tone.PolySynth.prototype.dispose = function(){
-		Tone.prototype.dispose.call(this);
-		for (var i = 0; i < this._voices.length; i++){
-			this._voices[i].dispose();
-			this._voices[i] = null;
-		}
-		this._voices = null;
-		this._activeVoices = null;
-		this._freeVoices = null;
-	};
-
-	return Tone.PolySynth;
-});
-define('Tone/signal/Max',["Tone/core/Tone", "Tone/signal/GreaterThan", "Tone/signal/Selector", "Tone/signal/Signal"], function(Tone){
-
-	
-
-	/**
-	 * 	@class  the output signal is the greater of the incoming signal and max
-	 * 	
-	 *  @constructor
-	 *  @extends {Tone}
-	 *  @param {number} max the 
-	 */
-	Tone.Max = function(max){
-		Tone.call(this);
-
-		/**
-		 *  the max signal
-		 *  @type {Tone.Signal}
-		 *  @private
-		 */
-		this._maxSignal = new Tone.Signal(max);
-
-		/**
-		 *  @type {Tone.Selector}
-		 *  @private
-		 */
-		this._switch = new Tone.Selector(2);
-
-		/**
-		 *  @type {Tone.Selector}
-		 *  @private
-		 */
-		this._gt = new Tone.GreaterThan(max);
-
-		//connections
-		this._maxSignal.connect(this._switch, 0, 0);
-		this.input.connect(this._switch, 0, 1);
-		this.input.connect(this._gt);
-		this._gt.connect(this._switch.gate);
-		this._switch.connect(this.output);
-	};
-
-	Tone.extend(Tone.Max);
-
-	/**
-	 *  set the max value
-	 *  @param {number} max the maximum to compare to the incoming signal
-	 */
-	Tone.Max.prototype.setMax = function(max){
-		this._maxSignal.setValue(max);
-	};
-
-	/**
-	 *  borrows the method from {@link Tone.Signal}
-	 *  
-	 *  @function
-	 */
-	Tone.Max.prototype.connect = Tone.Signal.prototype.connect;
-
-	/**
-	 *  clean up
-	 */
-	Tone.Max.prototype.dispose = function(){
-		this.input.disconnect();
-		this.output.disconnect();
-		this._maxSignal.dispose();
-		this._switch.dispose();
-		this._gt.dispose();
-		this.input = null;
-		this.output = null;
-		this._maxSignal = null;
-		this._switch = null;
-		this._gt = null;
-	};
-
-	return Tone.Max;
-});
-define('Tone/signal/Min',["Tone/core/Tone", "Tone/signal/LessThan", "Tone/signal/Selector", "Tone/signal/Signal"], function(Tone){
-
-	
-
-	/**
-	 * 	@class  the output signal is the lesser of the incoming signal and min
-	 * 	
-	 *  @constructor
-	 *  @extends {Tone}
-	 *  @param {number} min the minimum to compare to the incoming signal
-	 */
-	Tone.Min = function(min){
-		Tone.call(this);
-
-		/**
-		 *  the min signal
-		 *  @type {Tone.Signal}
-		 *  @private
-		 */
-		this._minSignal = new Tone.Signal(min);
-
-		/**
-		 *  @type {Tone.Selector}
-		 *  @private
-		 */
-		this._switch = new Tone.Selector(2);
-
-		/**
-		 *  @type {Tone.Selector}
-		 *  @private
-		 */
-		this._lt = new Tone.LessThan(min);
-
-		//connections
-		this._minSignal.connect(this._switch, 0, 0);
-		this.input.connect(this._switch, 0, 1);
-		this.input.connect(this._lt);
-		this._lt.connect(this._switch.gate);
-		this._switch.connect(this.output);
-	};
-
-	Tone.extend(Tone.Min);
-
-	/**
-	 *  set the min value
-	 *  @param {number} min the minimum to compare to the incoming signal
-	 */
-	Tone.Min.prototype.setMin = function(min){
-		this._minSignal.setValue(min);
-	};
-
-	/**
-	 *  borrows the method from {@link Tone.Signal}
-	 *  
-	 *  @function
-	 */
-	Tone.Min.prototype.connect = Tone.Signal.prototype.connect;
-
-	/**
-	 *  clean up
-	 */
-	Tone.Min.prototype.dispose = function(){
-		this.input.disconnect();
-		this.output.disconnect();
-		this._minSignal.dispose();
-		this._switch.dispose();
-		this._lt.dispose();
-		this.input = null;
-		this.output = null;
-		this._minSignal = null;
-		this._switch = null;
-		this._lt = null;
-	};
-
-	return Tone.Min;
-});
-define('Tone/signal/Clip',["Tone/core/Tone", "Tone/signal/Max", "Tone/signal/Min", "Tone/signal/Signal"], function(Tone){
-
-	
-
-	/**
-	 * 	@class  Clip the incoming signal so that the output is always between min and max
-	 * 	
-	 *  @constructor
-	 *  @extends {Tone}
-	 *  @param {number} min the minimum value of the outgoing signal
-	 *  @param {number} max the maximum value of the outgoing signal
-	 */
-	Tone.Clip = function(min, max){
-		Tone.call(this);
-
-		//make sure the args are in the right order
-		if (min > max){
-			var tmp = min;
-			min = max;
-			max = tmp;
-		}
-		
-		/**
-		 *  the min clipper
-		 *  @type {Tone.Min}
-		 *  @private
-		 */
-		this._min = new Tone.Min(max);
-
-		/**
-		 *  the max clipper
-		 *  @type {Tone.Max}
-		 *  @private
-		 */
-		this._max = new Tone.Max(min);
-
-		//connect it up
-		this.chain(this.input, this._min, this._max, this.output);
-	};
-
-	Tone.extend(Tone.Clip);
-
-	/**
-	 *  set the minimum value
-	 *  @param {number} min the new min value
-	 */
-	Tone.Clip.prototype.setMin = function(min){
-		this._min.setMin(min);
-	};
-
-	/**
-	 *  set the maximum value
-	 *  @param {number} max the new max value
-	 */
-	Tone.Clip.prototype.setMax = function(max){
-		this._max.setMax(max);	
-	};
-
-	/**
-	 *  borrows the method from {@link Tone.Signal}
-	 *  
-	 *  @function
-	 */
-	Tone.Clip.prototype.connect = Tone.Signal.prototype.connect;
-
-	/**
-	 *  clean up
-	 */
-	Tone.Clip.prototype.dispose = function(){
-		this._min.dispose();
-		this._max.dispose();
-		this.input.disconnect();
-		this.output.disconnect();
-		this._min = null;
-		this._max = null;
-		this.input = null;
-		this.output = null;
-	};
-
-	return Tone.Clip;
-});
-define('Tone/signal/Route',["Tone/core/Tone", "Tone/signal/Equal", "Tone/signal/Signal"], function(Tone){
-
-	
-
-	/**
-	 *  @class Route a single input to the specified output
-	 *
-	 *
-	 *  @constructor
-	 *  @extends {Tone}
-	 *  @param {number=} [outputCount=2] the number of inputs the switch accepts
-	 */
-	Tone.Route = function(outputCount){
-
-		outputCount = this.defaultArg(outputCount, 2);
-
-		/**
-		 *  the array of outputs
-		 *  @type {Array<RouteGate>}
-		 */
-		this.output = new Array(outputCount);
-
-		/**
-		 *  a single input
-		 *  @type {GainNode}
-		 */
-		this.input = this.context.createGain();
-
-		/**
-		 *  the control signal
-		 *  @type {Tone.Signal}
-		 */
-		this.gate = new Tone.Signal(0);
-
-		//make all the inputs and connect them
-		for (var i = 0; i < outputCount; i++){
-			var routeGate = new RouteGate(i);
-			this.output[i] = routeGate;
-			this.gate.connect(routeGate.selecter);
-			this.input.connect(routeGate);
-		}
-	};
-
-	Tone.extend(Tone.Route);
-
-	/**
-	 *  routes the signal to one of the outputs and close the others
-	 *  @param {number=} [which=0] open one of the gates (closes the other)
-	 *  @param {Tone.Time} time the time when the switch will open
-	 */
-	Tone.Route.prototype.select = function(which, time){
-		//make sure it's an integer
-		which = Math.floor(which);
-		this.gate.setValueAtTime(which, this.toSeconds(time));
-	};
-
-	/**
-	 *  borrows the method from {@link Tone.Signal}
-	 *  
-	 *  @function
-	 */
-	Tone.Route.prototype.connect = Tone.Signal.prototype.connect;
-
-	/**
-	 *  dispose method
-	 */
-	Tone.Route.prototype.dispose = function(){
-		this.input.disconnect();
-		this.gate.dispose();
-		for (var i = 0; i < this.output.length; i++){
-			this.output[i].dispose();
-			this.output[i] = null;
-		}
-		this.gate = null;
-		this.input = null;
-	}; 
-
-	////////////START HELPER////////////
-
-	/**
-	 *  helper class for Tone.Route representing a single gate
-	 *  @constructor
-	 *  @extends {Tone}
-	 *  @internal only used by Tone.Route
-	 */
-	var RouteGate = function(num){
-
-		/**
-		 *  the selector
-		 *  @type {Tone.Equal}
-		 */
-		this.selecter = new Tone.Equal(num);
-
-		/**
-		 *  the gate
-		 *  @type {GainNode}
-		 */
-		this.gate = this.input = this.output = this.context.createGain();
-
-		//connect the selecter to the gate gain
-		this.selecter.connect(this.gate.gain);
-	};
-
-	Tone.extend(RouteGate);
-
-	/**
-	 *  clean up
-	 *  @private
-	 */
-	RouteGate.prototype.dispose = function(){
-		this.selecter.dispose();
-		this.gate.disconnect();
-		this.selecter = null;
-		this.gate = null;
-	};
-
-	////////////END HELPER////////////
-
-	//return Tone.Route
-	return Tone.Route;
-});
-define('Tone/signal/Switch',["Tone/core/Tone", "Tone/signal/Signal", "Tone/signal/Threshold"], function(Tone){
-
-	
-
-	/**
-	 *  @class  When the gate is set to 0, the input signal does not pass through to the output. 
-	 *          If the gate is set to 1, the input signal passes through.
-	 *          the gate is initially closed.
-	 *
-	 *  @constructor
-	 *  @extends {Tone}
-	 */
-	Tone.Switch = function(){
-		Tone.call(this);
-
-		/**
-		 *  the control signal for the switch
-		 *  when this value is 0, the input signal will not pass through,
-		 *  when it is high (1), the input signal will pass through.
-		 *  
-		 *  @type {Tone.Signal}
-		 */
-		this.gate = new Tone.Signal(0);
-
-		/**
-		 *  thresh the control signal
-		 *  @type {Tone.Threshold}
-		 *  @private
-		 */
-		this._thresh = new Tone.Threshold(0.5);
-
-		this.input.connect(this.output);
-		this.chain(this.gate, this._thresh, this.output.gain);
-		this.output.gain.value = 0;
-	};
-
-	Tone.extend(Tone.Switch);
-
-	/**
-	 *  open the switch at a specific time
-	 *
-	 *  @param {Tone.Time} time the time when the switch will be open
-	 */
-	Tone.Switch.prototype.open = function(time){
-		this.gate.setValueAtTime(1, this.toSeconds(time));
-	}; 
-
-	/**
-	 *  close the switch at a specific time
-	 *
-	 *  @param {Tone.Time} time the time when the switch will be open
-	 */
-	Tone.Switch.prototype.close = function(time){
-		this.gate.setValueAtTime(0, this.toSeconds(time));
-	}; 
-
-	/**
-	 *  borrows the method from {@link Tone.Signal}
-	 *  
-	 *  @function
-	 */
-	Tone.Switch.prototype.connect = Tone.Signal.prototype.connect;
-
-	/**
-	 *  clean up
-	 */
-	Tone.Switch.prototype.dispose = function(){
-		Tone.prototype.dispose.call(this);
-		this.gate.dispose();
-		this._thresh.dispose();
-		this.signal = null;
-		this._thresh = null;
-	}; 
-
-	return Tone.Switch;
-});
-define('Tone/source/Microphone',["Tone/core/Tone", "Tone/source/Source"], function(Tone){
-
-	
-
-	/**
-	 *  @class  WebRTC Microphone. 
-	 *          CHROME ONLY (for now) because of the 
-	 *          use of the MediaStreamAudioSourceNode
-	 *
-	 *  @constructor
-	 *  @extends {Tone.Source}
-	 *  @param {number=} inputNum 
-	 */
-	Tone.Microphone = function(inputNum){
-		Tone.Source.call(this);
-
-		/**
-		 *  @type {MediaStreamAudioSourceNode}
-		 *  @private
-		 */
-		this._mediaStream = null;
-		/**
-		 *  @type {LocalMediaStream}
-		 *  @private
-		 */
-		this._stream = null;
-		/**
-		 *  @type {Object}
-		 *  @private
-		 */
-		this.constraints = {"audio" : true};
-
-		//get the option
-		var self = this;
-		MediaStreamTrack.getSources(function (media_sources) {
-			if (inputNum < media_sources.length){
-				self.constraints.audio = {
-					optional : [{ sourceId: media_sources[inputNum].id}]
-				};
-			}
-		});		
-	};
-
-	Tone.extend(Tone.Microphone, Tone.Source);
-
-	/**
-	 *  start the stream. 
-	 */
-	Tone.Microphone.prototype.start = function(){
-		if (this.state === Tone.Source.State.STOPPED){
-			this.state = Tone.Source.State.STARTED;
-				navigator.getUserMedia(this.constraints, 
-					this._onStream.bind(this), this._onStreamError.bind(this));
-		}
-	};
-
-	/**
-	 *  stop the stream. 
-	 */
-	Tone.Microphone.prototype.stop = function(){
-		if (this._stream && this.state === Tone.Source.State.STARTED){
-			this.state = Tone.Source.State.STOPPED;
-			this._stream.stop();
-		}
-	};
-
-	/**
-	 *  called when the stream is successfully setup
-	 *  @param   {LocalMediaStream} stream 
-	 *  @private
-	 */
-	Tone.Microphone.prototype._onStream = function(stream) {
-		this._stream = stream;
-		// Wrap a MediaStreamSourceNode around the live input stream.
-		this._mediaStream = this.context.createMediaStreamSource(stream);
-		this._mediaStream.connect(this.output);
-	};
-
-	/**
-	 *  called on error
-	 *  @param   {Error} e 
-	 *  @private
-	 */
-	Tone.Microphone.prototype._onStreamError = function(e) {
-		console.error(e);
-	};
-
-	/**
-	 *  clean up
-	 */
-	Tone.Microphone.prototype.dispose = function() {
-		Tone.Source.prototype.dispose.call(this);
-		this._stream.disconnect();
-		this._mediaStream.disconnect();
-		this._stream = null;
-		this._mediaStream = null;
-	};
-
-	//polyfill
-	navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || 
-		navigator.mozGetUserMedia || navigator.msGetUserMedia;
-
-	return Tone.Microphone;
-});
 define('Tone/source/Noise',["Tone/core/Tone", "Tone/source/Source"], function(Tone){
 
 	
@@ -8996,6 +9363,771 @@ define('Tone/source/Noise',["Tone/core/Tone", "Tone/source/Source"], function(To
 
 	return Tone.Noise;
 });
+define('Tone/instrument/PluckSynth',["Tone/core/Tone", "Tone/instrument/Instrument", "Tone/source/Noise", "Tone/component/LowpassCombFilter"], function(Tone){
+
+	
+
+	/**
+	 *  @class Karplus-String string synthesis. 
+	 *  
+	 *  @constructor
+	 *  @extends {Tone.Instrument}
+	 */
+	Tone.PluckSynth = function(){
+
+		Tone.Instrument.call(this);
+
+		/**
+		 *  @type {Tone.Noise}
+		 *  @private
+		 */
+		this._noise = new Tone.Noise("pink");
+
+		/**
+		 *  the amount of noise at the attack. 
+		 *  nominal range of [0.1, 20]
+		 *  @type {number}
+		 */
+		this.attackNoise = 1;
+
+		/**
+		 *  the LFCF
+		 *  @type {Tone.LowpassCombFilter}
+		 *  @private
+		 */
+		this._lfcf = new Tone.LowpassCombFilter(1 / 440);
+
+		/**
+		 *  the resonance control
+		 *  @type {Tone.Signal}
+		 */
+		this.resonance = this._lfcf.resonance;
+
+		/**
+		 *  the dampening control. i.e. the lowpass filter frequency of the comb filter
+		 *  @type {Tone.Signal}
+		 */
+		this.dampening = this._lfcf.dampening;
+
+		//connections
+		this._noise.connect(this._lfcf);
+		this._lfcf.connect(this.output);
+	};
+
+	Tone.extend(Tone.PluckSynth, Tone.Instrument);
+
+
+	/**
+	 *  trigger the attack portion
+	 */
+	Tone.PluckSynth.prototype.triggerAttack = function(note, time) {
+		if (typeof note === "string"){
+			note = this.noteToFrequency(note);
+		}
+		time = this.toSeconds(time);
+		var delayAmount = 1 / note;
+		this._lfcf.setDelayTime(delayAmount, time);		
+		this._noise.start(time);
+		this._noise.stop(time + delayAmount * this.attackNoise);
+	};
+
+	/**
+	 *  clean up
+	 */
+	Tone.PluckSynth.prototype.dispose = function(){
+		Tone.Instrument.prototype.dispose.call(this);
+		this._noise.dispose();
+		this._lfcf.dispose();
+		this._noise = null;
+		this._lfcf = null;
+		this.dampening = null;
+		this.resonance = null;
+	};
+
+	return Tone.PluckSynth;
+});
+define('Tone/instrument/PolySynth',["Tone/core/Tone", "Tone/instrument/MonoSynth", "Tone/source/Source"], 
+function(Tone){
+
+	
+
+	/**
+	 *  @class  Creates a polyphonic synthesizer out of 
+	 *          the monophonic voice which is passed in. 
+	 *
+	 *  @example
+	 *  //a polysynth composed of 6 Voices of MonoSynth
+	 *  var synth = new Tone.PolySynth(6, Tone.MonoSynth);
+	 *  //set the MonoSynth preset
+	 *  synth.setPreset("Pianoetta");
+	 *
+	 *  @constructor
+	 *  @extends {Tone.Instrument}
+	 *  @param {number|Object} [polyphony=4] the number of voices to create
+	 *  @param {function} [voice=Tone.MonoSynth] the constructor of the voices
+	 *                                            uses Tone.MonoSynth by default
+	 *  @param {Object} voiceOptions the options to pass to the voice                                          
+	 */
+	Tone.PolySynth = function(){
+
+		Tone.Instrument.call(this);
+
+		var options = this.optionsObject(arguments, ["polyphony", "voice", "voiceOptions"], Tone.PolySynth.defaults);
+
+		/**
+		 *  the array of voices
+		 *  @private
+		 *  @type {Array}
+		 */
+		this._voices = new Array(options.polyphony);
+
+		/**
+		 *  the queue of free voices
+		 *  @private
+		 *  @type {Array}
+		 */
+		this._freeVoices = [];
+
+		/**
+		 *  keeps track of which notes are down
+		 *  @private
+		 *  @type {Object}
+		 */
+		this._activeVoices = {};
+
+		//create the voices
+		for (var i = 0; i < options.polyphony; i++){
+			var v = new options.voice(options.voiceOptions);
+			this._voices[i] = v;
+			v.connect(this.output);
+		}
+
+		//make a copy of the voices
+		this._freeVoices = this._voices.slice(0);
+	};
+
+	Tone.extend(Tone.PolySynth, Tone.Instrument);
+
+	/**
+	 *  the defaults
+	 *  @const
+	 *  @static
+	 *  @type {Object}
+	 */
+	Tone.PolySynth.defaults = {
+		"polyphony" : 4,
+		"voice" : Tone.MonoSynth,
+		"voiceOptions" : {
+			"portamento" : 0
+		}
+	};
+
+	/**
+	 *  trigger the attack
+	 *  @param  {string|number|Object} value the value of the note to start
+	 *  @param  {Tone.Time=} [time=now]  the start time of the note
+	 *  @param {number=} velocity the velocity of the note
+	 */
+	Tone.PolySynth.prototype.triggerAttack = function(value, time, velocity){
+		var stringified = JSON.stringify(value);
+		if (this._activeVoices[stringified]){
+			this._activeVoices[stringified].triggerAttack(value, time, velocity);
+		} else if (this._freeVoices.length > 0){
+			var voice = this._freeVoices.shift();
+			voice.triggerAttack(value, time, velocity);
+			this._activeVoices[stringified] = voice;
+		}
+	};
+
+	/**
+	 *  trigger the attack and release after the specified duration
+	 *  
+	 *  @param  {number|string} note     the note as a number or a string note name
+	 *  @param  {Tone.Time} duration the duration of the note
+	 *  @param  {Tone.Time=} time     if no time is given, defaults to now
+	 *  @param  {number=} velocity the velocity of the attack (0-1)
+	 */
+	Tone.PolySynth.prototype.triggerAttackRelease = function(value, duration, time, velocity){
+		time = this.toSeconds(time);
+		this.triggerAttack(value, time, velocity);
+		this.triggerRelease(value, time + this.toSeconds(duration));
+	};
+
+	/**
+	 *  trigger the release of a note
+	 *  @param  {string|number|Object} value the value of the note to release
+	 *  @param  {Tone.Time=} [time=now]  the release time of the note
+	 */
+	Tone.PolySynth.prototype.triggerRelease = function(value, time){
+		//get the voice
+		var stringified = JSON.stringify(value);
+		var voice = this._activeVoices[stringified];
+		if (voice){
+			voice.triggerRelease(time);
+			this._freeVoices.push(voice);
+			this._activeVoices[stringified] = null;
+		}
+	};
+
+	/**
+	 *  set the options on all of the voices
+	 *  @param {Object} params 
+	 */
+	Tone.PolySynth.prototype.set = function(params){
+		for (var i = 0; i < this._voices.length; i++){
+			this._voices[i].set(params);
+		}
+	};
+
+	/**
+	 *  @param {string} presetName the preset name
+	 */
+	Tone.PolySynth.prototype.setPreset = function(presetName){
+		for (var i = 0; i < this._voices.length; i++){
+			this._voices[i].setPreset(presetName);
+		}
+	};
+
+	/**
+	 *  clean up
+	 */
+	Tone.PolySynth.prototype.dispose = function(){
+		Tone.Instrument.prototype.dispose.call(this);
+		for (var i = 0; i < this._voices.length; i++){
+			this._voices[i].dispose();
+			this._voices[i] = null;
+		}
+		this._voices = null;
+		this._activeVoices = null;
+		this._freeVoices = null;
+	};
+
+	return Tone.PolySynth;
+});
+define('Tone/signal/Max',["Tone/core/Tone", "Tone/signal/GreaterThan", "Tone/signal/Select", "Tone/signal/Signal"], function(Tone){
+
+	
+
+	/**
+	 * 	@class  the output signal is the greater of the incoming signal and max
+	 * 	
+	 *  @constructor
+	 *  @extends {Tone}
+	 *  @param {number} max the 
+	 */
+	Tone.Max = function(max){
+		Tone.call(this);
+
+		/**
+		 *  the max signal
+		 *  @type {Tone.Signal}
+		 *  @private
+		 */
+		this._maxSignal = new Tone.Signal(max);
+
+		/**
+		 *  @type {Tone.Select}
+		 *  @private
+		 */
+		this._switch = new Tone.Select(2);
+
+		/**
+		 *  @type {Tone.Select}
+		 *  @private
+		 */
+		this._gt = new Tone.GreaterThan(max);
+
+		//connections
+		this._maxSignal.connect(this._switch, 0, 0);
+		this.input.connect(this._switch, 0, 1);
+		this.input.connect(this._gt);
+		this._gt.connect(this._switch.gate);
+		this._switch.connect(this.output);
+	};
+
+	Tone.extend(Tone.Max);
+
+	/**
+	 *  set the max value
+	 *  @param {number} max the maximum to compare to the incoming signal
+	 */
+	Tone.Max.prototype.setMax = function(max){
+		this._maxSignal.setValue(max);
+	};
+
+	/**
+	 *  borrows the method from {@link Tone.Signal}
+	 *  
+	 *  @function
+	 */
+	Tone.Max.prototype.connect = Tone.Signal.prototype.connect;
+
+	/**
+	 *  clean up
+	 */
+	Tone.Max.prototype.dispose = function(){
+		Tone.prototype.dispose.call(this);
+		this._maxSignal.dispose();
+		this._switch.dispose();
+		this._gt.dispose();
+		this._maxSignal = null;
+		this._switch = null;
+		this._gt = null;
+	};
+
+	return Tone.Max;
+});
+define('Tone/signal/Min',["Tone/core/Tone", "Tone/signal/LessThan", "Tone/signal/Select", "Tone/signal/Signal"], function(Tone){
+
+	
+
+	/**
+	 * 	@class  the output signal is the lesser of the incoming signal and min
+	 * 	
+	 *  @constructor
+	 *  @extends {Tone}
+	 *  @param {number} min the minimum to compare to the incoming signal
+	 */
+	Tone.Min = function(min){
+		Tone.call(this);
+
+		/**
+		 *  the min signal
+		 *  @type {Tone.Signal}
+		 *  @private
+		 */
+		this._minSignal = new Tone.Signal(min);
+
+		/**
+		 *  @type {Tone.Select}
+		 *  @private
+		 */
+		this._switch = new Tone.Select(2);
+
+		/**
+		 *  @type {Tone.Select}
+		 *  @private
+		 */
+		this._lt = new Tone.LessThan(min);
+
+		//connections
+		this._minSignal.connect(this._switch, 0, 0);
+		this.input.connect(this._switch, 0, 1);
+		this.input.connect(this._lt);
+		this._lt.connect(this._switch.gate);
+		this._switch.connect(this.output);
+	};
+
+	Tone.extend(Tone.Min);
+
+	/**
+	 *  set the min value
+	 *  @param {number} min the minimum to compare to the incoming signal
+	 */
+	Tone.Min.prototype.setMin = function(min){
+		this._minSignal.setValue(min);
+	};
+
+	/**
+	 *  borrows the method from {@link Tone.Signal}
+	 *  
+	 *  @function
+	 */
+	Tone.Min.prototype.connect = Tone.Signal.prototype.connect;
+
+	/**
+	 *  clean up
+	 */
+	Tone.Min.prototype.dispose = function(){
+		Tone.prototype.dispose.call(this);
+		this._minSignal.dispose();
+		this._switch.dispose();
+		this._lt.dispose();
+		this._minSignal = null;
+		this._switch = null;
+		this._lt = null;
+	};
+
+	return Tone.Min;
+});
+define('Tone/signal/Clip',["Tone/core/Tone", "Tone/signal/Max", "Tone/signal/Min", "Tone/signal/Signal"], function(Tone){
+
+	
+
+	/**
+	 * 	@class  Clip the incoming signal so that the output is always between min and max
+	 * 	
+	 *  @constructor
+	 *  @extends {Tone}
+	 *  @param {number} min the minimum value of the outgoing signal
+	 *  @param {number} max the maximum value of the outgoing signal
+	 */
+	Tone.Clip = function(min, max){
+		Tone.call(this);
+
+		//make sure the args are in the right order
+		if (min > max){
+			var tmp = min;
+			min = max;
+			max = tmp;
+		}
+		
+		/**
+		 *  the min clipper
+		 *  @type {Tone.Min}
+		 *  @private
+		 */
+		this._min = new Tone.Min(max);
+
+		/**
+		 *  the max clipper
+		 *  @type {Tone.Max}
+		 *  @private
+		 */
+		this._max = new Tone.Max(min);
+
+		//connect it up
+		this.chain(this.input, this._min, this._max, this.output);
+	};
+
+	Tone.extend(Tone.Clip);
+
+	/**
+	 *  set the minimum value
+	 *  @param {number} min the new min value
+	 */
+	Tone.Clip.prototype.setMin = function(min){
+		this._min.setMin(min);
+	};
+
+	/**
+	 *  set the maximum value
+	 *  @param {number} max the new max value
+	 */
+	Tone.Clip.prototype.setMax = function(max){
+		this._max.setMax(max);	
+	};
+
+	/**
+	 *  borrows the method from {@link Tone.Signal}
+	 *  
+	 *  @function
+	 */
+	Tone.Clip.prototype.connect = Tone.Signal.prototype.connect;
+
+	/**
+	 *  clean up
+	 */
+	Tone.Clip.prototype.dispose = function(){
+		Tone.prototype.dispose.call(this);
+		this._min.dispose();
+		this._max.dispose();
+		this._min = null;
+		this._max = null;
+	};
+
+	return Tone.Clip;
+});
+define('Tone/signal/Route',["Tone/core/Tone", "Tone/signal/Equal", "Tone/signal/Signal"], function(Tone){
+
+	
+
+	/**
+	 *  @class Route a single input to the specified output
+	 *
+	 *
+	 *  @constructor
+	 *  @extends {Tone}
+	 *  @param {number=} [outputCount=2] the number of inputs the switch accepts
+	 */
+	Tone.Route = function(outputCount){
+
+		outputCount = this.defaultArg(outputCount, 2);
+
+		/**
+		 *  the array of outputs
+		 *  @type {Array<RouteGate>}
+		 */
+		this.output = new Array(outputCount);
+
+		/**
+		 *  a single input
+		 *  @type {GainNode}
+		 */
+		this.input = this.context.createGain();
+
+		/**
+		 *  the control signal
+		 *  @type {Tone.Signal}
+		 */
+		this.gate = new Tone.Signal(0);
+
+		//make all the inputs and connect them
+		for (var i = 0; i < outputCount; i++){
+			var routeGate = new RouteGate(i);
+			this.output[i] = routeGate;
+			this.gate.connect(routeGate.selecter);
+			this.input.connect(routeGate);
+		}
+	};
+
+	Tone.extend(Tone.Route);
+
+	/**
+	 *  routes the signal to one of the outputs and close the others
+	 *  @param {number=} [which=0] open one of the gates (closes the other)
+	 *  @param {Tone.Time} time the time when the switch will open
+	 */
+	Tone.Route.prototype.select = function(which, time){
+		//make sure it's an integer
+		which = Math.floor(which);
+		this.gate.setValueAtTime(which, this.toSeconds(time));
+	};
+
+	/**
+	 *  borrows the method from {@link Tone.Signal}
+	 *  
+	 *  @function
+	 */
+	Tone.Route.prototype.connect = Tone.Signal.prototype.connect;
+
+	/**
+	 *  dispose method
+	 */
+	Tone.Route.prototype.dispose = function(){
+		this.gate.dispose();
+		for (var i = 0; i < this.output.length; i++){
+			this.output[i].dispose();
+			this.output[i] = null;
+		}
+		Tone.prototype.dispose.call(this);
+		this.gate = null;
+	}; 
+
+	////////////START HELPER////////////
+
+	/**
+	 *  helper class for Tone.Route representing a single gate
+	 *  @constructor
+	 *  @extends {Tone}
+	 *  @internal only used by Tone.Route
+	 */
+	var RouteGate = function(num){
+
+		/**
+		 *  the selector
+		 *  @type {Tone.Equal}
+		 */
+		this.selecter = new Tone.Equal(num);
+
+		/**
+		 *  the gate
+		 *  @type {GainNode}
+		 */
+		this.gate = this.input = this.output = this.context.createGain();
+
+		//connect the selecter to the gate gain
+		this.selecter.connect(this.gate.gain);
+	};
+
+	Tone.extend(RouteGate);
+
+	/**
+	 *  clean up
+	 *  @private
+	 */
+	RouteGate.prototype.dispose = function(){
+		Tone.prototype.dispose.call(this);
+		this.selecter.dispose();
+		this.gate.disconnect();
+		this.selecter = null;
+		this.gate = null;
+	};
+
+	////////////END HELPER////////////
+
+	//return Tone.Route
+	return Tone.Route;
+});
+define('Tone/signal/Switch',["Tone/core/Tone", "Tone/signal/Signal", "Tone/signal/Threshold"], function(Tone){
+
+	
+
+	/**
+	 *  @class  When the gate is set to 0, the input signal does not pass through to the output. 
+	 *          If the gate is set to 1, the input signal passes through.
+	 *          the gate is initially closed.
+	 *
+	 *  @constructor
+	 *  @extends {Tone}
+	 */
+	Tone.Switch = function(){
+		Tone.call(this);
+
+		/**
+		 *  the control signal for the switch
+		 *  when this value is 0, the input signal will not pass through,
+		 *  when it is high (1), the input signal will pass through.
+		 *  
+		 *  @type {Tone.Signal}
+		 */
+		this.gate = new Tone.Signal(0);
+
+		/**
+		 *  thresh the control signal
+		 *  @type {Tone.Threshold}
+		 *  @private
+		 */
+		this._thresh = new Tone.Threshold(0.5);
+
+		this.input.connect(this.output);
+		this.chain(this.gate, this._thresh, this.output.gain);
+	};
+
+	Tone.extend(Tone.Switch);
+
+	/**
+	 *  open the switch at a specific time
+	 *
+	 *  @param {Tone.Time} time the time when the switch will be open
+	 */
+	Tone.Switch.prototype.open = function(time){
+		this.gate.setValueAtTime(1, this.toSeconds(time));
+	}; 
+
+	/**
+	 *  close the switch at a specific time
+	 *
+	 *  @param {Tone.Time} time the time when the switch will be open
+	 */
+	Tone.Switch.prototype.close = function(time){
+		this.gate.setValueAtTime(0, this.toSeconds(time));
+	}; 
+
+	/**
+	 *  borrows the method from {@link Tone.Signal}
+	 *  
+	 *  @function
+	 */
+	Tone.Switch.prototype.connect = Tone.Signal.prototype.connect;
+
+	/**
+	 *  clean up
+	 */
+	Tone.Switch.prototype.dispose = function(){
+		Tone.prototype.dispose.call(this);
+		this.gate.dispose();
+		this._thresh.dispose();
+		this.gate = null;
+		this._thresh = null;
+	}; 
+
+	return Tone.Switch;
+});
+define('Tone/source/Microphone',["Tone/core/Tone", "Tone/source/Source"], function(Tone){
+
+	
+
+	/**
+	 *  @class  WebRTC Microphone. 
+	 *          CHROME ONLY (for now) because of the 
+	 *          use of the MediaStreamAudioSourceNode
+	 *
+	 *  @constructor
+	 *  @extends {Tone.Source}
+	 *  @param {number=} inputNum 
+	 */
+	Tone.Microphone = function(inputNum){
+		Tone.Source.call(this);
+
+		/**
+		 *  @type {MediaStreamAudioSourceNode}
+		 *  @private
+		 */
+		this._mediaStream = null;
+		/**
+		 *  @type {LocalMediaStream}
+		 *  @private
+		 */
+		this._stream = null;
+		/**
+		 *  @type {Object}
+		 *  @private
+		 */
+		this.constraints = {"audio" : true};
+
+		//get the option
+		var self = this;
+		MediaStreamTrack.getSources(function (media_sources) {
+			if (inputNum < media_sources.length){
+				self.constraints.audio = {
+					optional : [{ sourceId: media_sources[inputNum].id}]
+				};
+			}
+		});		
+	};
+
+	Tone.extend(Tone.Microphone, Tone.Source);
+
+	/**
+	 *  start the stream. 
+	 */
+	Tone.Microphone.prototype.start = function(){
+		if (this.state === Tone.Source.State.STOPPED){
+			this.state = Tone.Source.State.STARTED;
+				navigator.getUserMedia(this.constraints, 
+					this._onStream.bind(this), this._onStreamError.bind(this));
+		}
+	};
+
+	/**
+	 *  stop the stream. 
+	 */
+	Tone.Microphone.prototype.stop = function(){
+		if (this._stream && this.state === Tone.Source.State.STARTED){
+			this.state = Tone.Source.State.STOPPED;
+			this._stream.stop();
+		}
+	};
+
+	/**
+	 *  called when the stream is successfully setup
+	 *  @param   {LocalMediaStream} stream 
+	 *  @private
+	 */
+	Tone.Microphone.prototype._onStream = function(stream) {
+		this._stream = stream;
+		// Wrap a MediaStreamSourceNode around the live input stream.
+		this._mediaStream = this.context.createMediaStreamSource(stream);
+		this._mediaStream.connect(this.output);
+	};
+
+	/**
+	 *  called on error
+	 *  @param   {Error} e 
+	 *  @private
+	 */
+	Tone.Microphone.prototype._onStreamError = function(e) {
+		console.error(e);
+	};
+
+	/**
+	 *  clean up
+	 */
+	Tone.Microphone.prototype.dispose = function() {
+		Tone.Source.prototype.dispose.call(this);
+		this._stream.disconnect();
+		this._mediaStream.disconnect();
+		this._stream = null;
+		this._mediaStream = null;
+	};
+
+	//polyfill
+	navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || 
+		navigator.mozGetUserMedia || navigator.msGetUserMedia;
+
+	return Tone.Microphone;
+});
 define('Tone/source/PulseOscillator',["Tone/core/Tone", "Tone/source/Source", "Tone/source/Oscillator", "Tone/signal/Signal", "Tone/signal/Threshold"],
 function(Tone){
 
@@ -9035,6 +10167,7 @@ function(Tone){
 		/**
 		 *  the sawtooth oscillator
 		 *  @type {Tone.Oscillator}
+		 *  @private
 		 */
 		this._sawtooth = new Tone.Oscillator(frequency, "sawtooth");
 
@@ -9107,10 +10240,15 @@ function(Tone){
 	 *  clean up method
 	 */
 	Tone.PulseOscillator.prototype.dispose = function(){
+		Tone.Source.prototype.dispose.call(this);
 		this._sawtooth.dispose();
-		this._sawtooth = null;
 		this.width.dispose();
+		this._thresh.disconnect();
+		this._sawtooth = null;
+		this.frequency = null;
+		this.detune = null;
 		this.width = null;
+		this._thresh = null;
 	};
 
 	return Tone.PulseOscillator;
