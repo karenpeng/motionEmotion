@@ -12,6 +12,8 @@ var minor = [0, 3, 7, 12, 15, 19, 24, 27, 31];
 var harMinor = [0, 2, 3, 5, 7, 8, 11, 12, 14, 15, 17, 19, 20, 23, 24];
 var sus = [0, 5, 7, 12, 17, 19, 24, 29, 31];
 var minSev = [0, 3, 7, 10, 12, 15, 19, 22];
+var octaves = [-24, -12, 0, 12, 24, 36, 48];
+
 var direction = 0;
 
 /*
@@ -33,6 +35,7 @@ function setNewEmo(emotion) {
   //console.log(emotion);
   switch (emotion) {
   case 'happy':
+    disposeNoise();
     emoSound = agogoLow;
     Tone.Transport.setBpm(100);
     bass.setPreset('Pizz');
@@ -42,6 +45,7 @@ function setNewEmo(emotion) {
     bass.filter.Q.setValue(7);
     break;
   case 'sad':
+    disposeNoise();
     emoSound = kick;
     bass.setPreset('Bassy');
     Tone.Transport.setBpm(50);
@@ -51,22 +55,25 @@ function setNewEmo(emotion) {
     scale = sus;
     break;
   case 'surprised':
+    disposeNoise();
     emoSound = agogoHigh;
     bass.setPreset('BrassCircuit');
     Tone.Transport.setBpm(150);
     bass.filterEnvelope.setMax(700);
     bass.filter.Q.setValue(7);
     root = 52;
-    scale = sus;
+    scale = minSev;
     break;
   case 'angry':
+    makeNoise();
     emoSound = hh;
     bass.setPreset('Barky');
     Tone.Transport.setBpm(66.69);
+    bass.envelope.sustain = 0.5;
     bass.filterEnvelope.setMax(2000);
-    bass.filter.Q.setValue(10);
+    bass.filter.Q.setValue(100);
     root = 46;
-    scale = minSev;
+    scale = octaves;
     break;
   }
   Tone.Transport.setTimeout(function (time) {
@@ -159,10 +166,34 @@ bass.filter.Q.setValue(7);
 bass.envelope.release = 3;
 var bassIsOn = false;
 
+// Noise
+var noise = new Tone.Noise();
+noise.connect(bass.filter);
+noise.setVolume(-100);
+noise.start();
+
+var qOffset = 0;
+
+function makeNoise() {
+  noise.output.gain.exponentialRampToValueAtTime(5, noise.now() );
+  qOffset = 4;
+  bass.envelope.attack = 0.5;
+  bass.envelope.sustain = 0.1;
+}
+
+function disposeNoise() {
+  bass.envelope.attack = 0.01;
+  bass.envelope.sustain = 0.9;
+  qOffset = 0;
+  bass.filter.setType('lowpass');
+  noise.output.gain.exponentialRampToValueAtTime(0.0001, noise.now() )
+}
+
+
 function triggerBass(time) {
   if (bassActive) {
     var offset = -24;
-    var bassQ = map(data.totalDist, 0, maxDistance, 5, 8);
+    var bassQ = map(data.totalDist, 0, maxDistance, 5, 8) + qOffset;
     if (data.avgX < width / 3) {
       offset = 24;
       bass.filterEnvelope.setMax(2000);
@@ -170,6 +201,10 @@ function triggerBass(time) {
     } else {
       bass.filterEnvelope.setMax(data.totalDist + 200);
       bass.filter.Q.setValue(bassQ);
+    }
+    if (qOffset > 1) {
+      bass.filterEnvelope.setMax((height - data.maxY) * 10);
+      bass.filter.Q.setValue(bassQ - 4);
     }
     if (data.triangleAlpha > 0.5) {
       var pitchPos = Math.floor(map(data.avgY, 0, height, scale.length, 0));
