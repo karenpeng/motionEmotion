@@ -43,7 +43,7 @@
     this.vertices = [];
   }
 
-  DrawPoints.prototype.resize = function(){
+  DrawPoints.prototype.resize = function () {
     this.width = this.can.width;
     this.height = this.can.height;
   };
@@ -72,19 +72,26 @@
       var t = this.myTriangles[index];
       switch (emotion) {
       case 'angry':
-        t.hue = Math.floor(Math.random() * 60);
+        //t.hue = 360;
+        t.hue = Math.floor(Math.random() * 50);
         t.saturation = Math.floor(Math.random() * 50 + 50);
         break;
       case 'sad':
-        t.hue = Math.floor(Math.random() * 80 + 200);
+        t.hue = Math.floor(Math.random() * 60 + 200);
+        t.saturation = Math.floor(Math.random() * 50);
         break;
-      case 'surprise':
-        t.hue = Math.floor(Math.random() * 80 + 280);
+      case 'surprised':
+        t.hue = Math.floor(Math.random() * 60 + 280);
         t.saturation = Math.floor(Math.random() * 50 + 50);
+        break;
+      case 'happy':
+        t.hue = Math.floor(Math.random() * 360);
+        t.saturation = Math.floor(Math.random() * 50);
         break;
       default:
         t.hue = Math.floor(Math.random() * 360);
         t.saturation = Math.floor(Math.random() * 50);
+        break;
       }
       index++;
     }
@@ -92,6 +99,7 @@
 
   DrawPoints.prototype.draw = function () {
     this.ctx.clearRect(0, 0, this.width, this.width);
+    //this.ctx.globalCompositeOperation = "multipy";
     this.ctx.save();
     this.ctx.translate(this.width, 0);
     this.ctx.scale(-1, 1);

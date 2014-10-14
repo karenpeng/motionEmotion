@@ -1,5 +1,7 @@
 var debugCanvas = document.getElementById("debugCanvas");
 var myCanvas = document.getElementById("myCanvas");
+var context = myCanvas.getContext("2d");
+context.globalCompositeOperation = "multipy";
 
 var detectPoints = new DetectPoints(debugCanvas);
 var drawPoints = new DrawPoints(myCanvas);
@@ -11,17 +13,6 @@ if (bgActive) {
 
 var data = new Data();
 
-// var stats = new Stats();
-// stats.setMode(0);
-// // Align top-left
-// stats.domElement.style.position = 'absolute';
-// stats.domElement.style.left = '0px';
-// stats.domElement.style.top = '0px';
-
-// document.body.appendChild(stats.domElement);
-
-// var timer = 0;
-// var startCounting = false;
 var maxThreshold = 15;
 var frameRate = 30;
 
@@ -63,27 +54,10 @@ function update() {
     maxThreshold) {
     drawPoints.updatePoints(detectPoints.points, detectPoints.width,
       detectPoints.height);
-    drawPoints.makeTriangle(curEmotion);
+    drawPoints.makeTriangle(preEmotion);
   }
 
   drawPoints.draw();
-
-  // if (drawPoints.myTriangles.length > 0) {
-  //   if (drawPoints.myTriangles[0].alpha < 0.64) {
-  //     startCounting = true;
-  //   } else {
-  //     startCounting = false;
-  //     timer = 0;
-  //   }
-  // }
-
-  // if (startCounting) {
-  //   timer++;
-  // }
-
-  // if (timer === 1) {
-  //   freezeCallback();
-  // }
 
   data.getPoints(drawPoints.vertices);
   //console.log(data.points);
@@ -102,12 +76,12 @@ function update() {
   data.getAvg();
   data.getTotalDist();
 
-  if (drawPoints.myTriangles.length <= 1 || data.triangleAlpha < 0.05) {
+  if ((drawPoints.myTriangles.length <= 1 || data.triangleAlpha < 0.05) && emojiTimer === 0) {
     myEmotion.update();
     curEmotion = myEmotion.maxEmo;
   }
 
-  if (preEmotion !== curEmotion) {
+  if (preEmotion !== curEmotion && curEmotion !== null) {
     switch (curEmotion) {
     case 'happy':
       emoji.innerHTML = '<img src="img/happy.png" width="60">';
@@ -123,10 +97,12 @@ function update() {
       break;
     default:
       emoji.innerHTML = null;
+      break;
     }
     setNewEmo(curEmotion);
     preEmotion = curEmotion;
     startCountingEmoji = true;
+    //console.log(curEmotion);
   }
 
   if (startCountingEmoji) {
