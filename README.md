@@ -7,12 +7,9 @@ It uses the webcam to detect points of motion on the screen and tracks the user'
 ### Libraries
 - **[clmtrackr.js](https://github.com/auduno/clmtrackr)** Face tracking / emotion detection
 - **[Tone.js](https://github.com/TONEnoTONE/Tone.js/)** Sound synthesis / sequencing
-- **[delaunay.js](https://github.com/ironwallaby/delaunay)**  Delaunay Triangulation 
+- **[delaunay.js](https://github.com/ironwallaby/delaunay)**  Delaunay triangulation 
 
 #### Collaborators
 - **[Karen Peng](http://karenlabs.com)** motion detection and visual design
 - **[Jason Sigal](http://www.jasonsigal.cc/)** sound design
 - Special Thanks for [T.K. Broderick](http://yourfriendtk.com/) and [Yotam Mann](http://yotammann.info/) for music suggestion and inspiration.
-
-#### License
-motionEmotion is distributed under the [MIT License](http://www.opensource.org/licenses/MIT)
