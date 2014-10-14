@@ -175,7 +175,7 @@ noise.start();
 var qOffset = 0;
 
 function makeNoise() {
-  noise.output.gain.exponentialRampToValueAtTime(5, noise.now() );
+  noise.output.gain.exponentialRampToValueAtTime(5, noise.now());
   qOffset = 4;
   bass.envelope.attack = 0.5;
   bass.envelope.sustain = 0.1;
@@ -186,9 +186,8 @@ function disposeNoise() {
   bass.envelope.sustain = 0.9;
   qOffset = 0;
   bass.filter.setType('lowpass');
-  noise.output.gain.exponentialRampToValueAtTime(0.0001, noise.now() )
+  noise.output.gain.exponentialRampToValueAtTime(0.0001, noise.now())
 }
-
 
 function triggerBass(time) {
   if (bassActive) {

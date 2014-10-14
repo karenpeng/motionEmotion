@@ -1,7 +1,7 @@
 var debugCanvas = document.getElementById("debugCanvas");
 var myCanvas = document.getElementById("myCanvas");
 var context = myCanvas.getContext("2d");
-context.globalCompositeOperation = "multipy";
+//context.globalCompositeOperation = "multipy";
 
 var detectPoints = new DetectPoints(debugCanvas);
 var drawPoints = new DrawPoints(myCanvas);

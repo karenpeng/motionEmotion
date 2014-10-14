@@ -81,7 +81,12 @@
         t.saturation = Math.floor(Math.random() * 50);
         break;
       case 'surprised':
-        t.hue = Math.floor(Math.random() * 60 + 280);
+        var chance = Math.random();
+        if (chance >= 0.5) {
+          t.hue = Math.floor(Math.random() * 40 + 300);
+        } else {
+          t.hue = Math.floor(Math.random() * 40 + 150);
+        }
         t.saturation = Math.floor(Math.random() * 50 + 50);
         break;
       case 'happy':
