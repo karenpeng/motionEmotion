@@ -136,6 +136,8 @@ function loop(callback) {
 
 setup();
 setTimeout(function () {
-  //do nothing;
-}, 200);
-loop(update);
+  loop(update);
+}, 1000);
+setTimeout(function () {
+  document.getElementById("reminder").style.display = "none";
+}, 3500);

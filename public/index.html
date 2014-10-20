@@ -1,6 +1,7 @@
 <html>
   <head>
     <link rel="shortcut icon" type="image/png" href="img/happy.png"/>
+    <link href='http://fonts.googleapis.com/css?family=Play' rel='stylesheet' type='text/css'>
     <style type="text/css">
       html,body{
         top: 0;
@@ -76,6 +77,17 @@
       #github{
         z-index: 2;
       }
+      #reminder{
+        width:300px;
+        font-size: 22px;
+        color: #eee;
+        font-family: "Play";
+        text-align: center;
+        position: absolute;
+        bottom: 50%;
+        left: 50%;
+        margin-left: -150px;
+      }
 </style>
   </head>
   <body>
@@ -83,9 +95,10 @@
       <canvas id="bgCanvas"></canvas>
       <canvas id="myCanvas"></canvas>
       <canvas id="debugCanvas" width="80px" height="60px"></canvas>
-      <video muted autoplay width="160px" height="120px"></video>
+      <video muted autoplay width="240px" height="180px"></video>
       <div id="fps"></div>
       <div id="emoji"></div>
+      <div id="reminder">Also Turn Your Speaker On</div>
       <a href="https://github.com/karenpeng/motionEmotion"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://camo.githubusercontent.com/52760788cde945287fbb584134c4cbc2bc36f904/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f77686974655f6666666666662e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_white_ffffff.png" id="github"></a>
   </body>
   <script type="text/javascript" src="js/canvas_size.js"></script>
