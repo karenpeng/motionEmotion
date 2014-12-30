@@ -93,7 +93,7 @@
   <body>
     <div id='container'>
       <canvas id="bgCanvas"></canvas>
-      <canvas id="myCanvas"></canvas>
+      <canvas id="myCanvas" display="none"></canvas>
       <canvas id="debugCanvas" width="80px" height="60px"></canvas>
       <video muted autoplay width="240px" height="180px"></video>
       <div id="fps"></div>
@@ -110,10 +110,8 @@
   <script type="text/javascript" src="js/draw.js"></script>
   <script type="text/javascript" src="js/calculate.js"></script>
   <!-- js file from facial library-->
-    <script src="js/lib/utils.js"></script>
-    <script src="js/lib/clmtrackr.min.js"></script>
+    <script src="js/lib/clmtrackr.js"></script>
     <script src="js/lib/model_pca_20_svm_emotionDetection.js"></script>
-    <script src="js/lib/Stats.js"></script>
     <script src="js/lib/emotion_classifier.js"></script>
     <script src="js/lib/emotionmodel.js"></script>
   <!-- end -->

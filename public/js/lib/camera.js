@@ -21,13 +21,7 @@ var WEBCAM = {
     }
 
     if (!hasGetUserMedia()) {
-      alert('getUserMedia() is not supported, please use Google Chrome');
-    } else {
-      // SHIM
-      navigator.getUserMedia  = navigator.getUserMedia ||
-                                navigator.webkitGetUserMedia ||
-                                navigator.mozGetUserMedia ||
-                                navigator.msGetUserMedia;
+      alert('getUserMedia() is not supported, please use Google Chorme');
     }
 
     var self = this,
@@ -41,7 +35,14 @@ var WEBCAM = {
       navigator.getUserMedia({
         video: true
       }, function (stream) {
-        self.video.src = window.URL.createObjectURL(stream);
+        self.video.src = stream;
+        self.localMediaStream = stream;
+      }, onWebcamFail);
+    } else if (navigator.webkitGetUserMedia) {
+      navigator.webkitGetUserMedia({
+        video: true
+      }, function (stream) {
+        self.video.src = window.webkitURL.createObjectURL(stream);
         self.localMediaStream = stream;
       }, onWebcamFail);
     } else {

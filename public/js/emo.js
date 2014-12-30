@@ -19,7 +19,7 @@
 
     this.ec = new emotionClassifier();
     this.ec.init(emotionModel);
-    //this.emotionData = this.ec.getBlank();
+    this.emotionData = this.ec.getBlank();
 
     this.maxEmo = null;
   };

@@ -1,6 +1,8 @@
 var debugCanvas = document.getElementById("debugCanvas");
 var myCanvas = document.getElementById("myCanvas");
 var context = myCanvas.getContext("2d");
+var vid = document.getElementsByTagName('video')[0];
+var startTimer = 0;
 //context.globalCompositeOperation = "multipy";
 
 var detectPoints = new DetectPoints(debugCanvas);
@@ -18,7 +20,7 @@ var frameRate = 30;
 
 var myEmotion = new MyClmTracker();
 var startCountingEmoji = false;
-var emojiTimer = 0;
+var emojiTimer = 1;
 
 var emoji = document.getElementById("emoji");
 
@@ -77,8 +79,16 @@ function update() {
   data.getTotalDist();
 
   if ((drawPoints.myTriangles.length <= 1 || data.triangleAlpha < 0.05) && emojiTimer === 0) {
+    if (startTimer === 0) {
+      //console.log("ouch!");
+      //myEmotion.ctrack.start(vid);
+      startTimer++;
+    }
     myEmotion.update();
     curEmotion = myEmotion.maxEmo;
+  } else {
+    myEmotion.ctrack.stop();
+    startTimer = 0;
   }
 
   if (preEmotion !== curEmotion && curEmotion !== null) {
@@ -122,16 +132,18 @@ function resize() {
 
 window.addEventListener('resize', resize, false);
 
-function loop(callback) {
-  setTimeout(function () {
-    requestAnimationFrame(function () {
-      loop(callback);
-    });
-    //stats.begin();
-    callback();
-    //stats.end();
+var frameRate = 0;
 
-  }, 1000 / frameRate);
+function loop(callback) {
+  requestAnimationFrame(function () {
+    loop(callback);
+  });
+
+  if (frameRate % 3 === 0) {
+    callback();
+  }
+  frameRate++;
+  //console.log(frameRate);
 }
 
 setup();
