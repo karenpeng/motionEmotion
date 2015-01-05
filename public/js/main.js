@@ -1,7 +1,7 @@
 var debugCanvas = document.getElementById("debugCanvas");
 var myCanvas = document.getElementById("myCanvas");
 var context = myCanvas.getContext("2d");
-var vid = document.getElementsByTagName('video')[0];
+var vid = document.getElementById("videoSource");
 var startTimer = 0;
 //context.globalCompositeOperation = "multipy";
 
@@ -80,7 +80,7 @@ function update() {
 
   if ((drawPoints.myTriangles.length <= 1 || data.triangleAlpha < 0.05) && emojiTimer === 0) {
     if (startTimer === 0) {
-      //console.log("ouch!");
+      console.log("ouch!");
       //myEmotion.ctrack.start(vid);
       startTimer++;
     }
