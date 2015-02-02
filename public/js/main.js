@@ -80,8 +80,8 @@ function update() {
 
   if ((drawPoints.myTriangles.length <= 1 || data.triangleAlpha < 0.05) && emojiTimer === 0) {
     if (startTimer === 0) {
-      console.log("ouch!");
-      //myEmotion.ctrack.start(vid);
+      //console.log("ouch!");
+      myEmotion.ctrack.start(vid);
       startTimer++;
     }
     myEmotion.update();
